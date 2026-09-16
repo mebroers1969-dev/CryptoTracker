@@ -1,0 +1,2308 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Crypto Portfolio Tracker</title>
+  
+  <!-- Startscherm icoon voor Android (Edge, Chrome, Samsung) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23f7931a'/%3E%3Cpath d='M64 43.5c1-6.5-4-10-10.8-12.3l2.2-8.8-5.4-1.3-2.1 8.6c-1.4-.3-2.9-.7-4.3-1l2.1-8.6-5.4-1.3-2.2 8.8c-1.2-.3-2.3-.6-3.4-.8l-7.5-1.9-1.4 5.8s4 .9 3.9 1c2.2.6 2.6 2.1 2.5 3.3l-2.5 10.2c.2 0 .3.1.5.2-.2-.1-.3-.1-.5-.2l-3.6 14.3c-.3.7-.9 1.7-2.4 1.3.1.1-3.9-1-3.9-1l-2.7 6.3 7 1.8c1.3.3 2.6.7 3.9 1l-2.2 9 5.4 1.3 2.2-8.8c1.5.4 3 .8 4.4 1.1l-2.2 8.8 5.4 1.3 2.2-9c9.3 1.8 16.3 1.1 19.3-7.4 2.4-6.8-.1-10.8-5-13.4 3.6-1 6.3-3.8 5-9.6zm-8.9 20.9c-1.7 6.8-13.1 3.1-16.8 2.2l3-12c3.7.9 15.6 2.7 13.8 9.8zm1.7-20.9c-1.5 6.2-11 3-14.1 2.3l2.7-10.9c3.1.8 13 2.3 11.4 8.6z' fill='%23ffffff'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23f7931a'/%3E%3Cpath d='M64 43.5c1-6.5-4-10-10.8-12.3l2.2-8.8-5.4-1.3-2.1 8.6c-1.4-.3-2.9-.7-4.3-1l2.1-8.6-5.4-1.3-2.2 8.8c-1.2-.3-2.3-.6-3.4-.8l-7.5-1.9-1.4 5.8s4 .9 3.9 1c2.2.6 2.6 2.1 2.5 3.3l-2.5 10.2c.2 0 .3.1.5.2-.2-.1-.3-.1-.5-.2l-3.6 14.3c-.3.7-.9 1.7-2.4 1.3.1.1-3.9-1-3.9-1l-2.7 6.3 7 1.8c1.3.3 2.6.7 3.9 1l-2.2 9 5.4 1.3 2.2-8.8c1.5.4 3 .8 4.4 1.1l-2.2 8.8 5.4 1.3 2.2-9c9.3 1.8 16.3 1.1 19.3-7.4 2.4-6.8-.1-10.8-5-13.4 3.6-1 6.3-3.8 5-9.6zm-8.9 20.9c-1.7 6.8-13.1 3.1-16.8 2.2l3-12c3.7.9 15.6 2.7 13.8 9.8zm1.7-20.9c-1.5 6.2-11 3-14.1 2.3l2.7-10.9c3.1.8 13 2.3 11.4 8.6z' fill='%23ffffff'/%3E%3C/svg%3E">
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --profit: #22c55e;
+      --loss: #ef4444;
+      --part-sold: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 850px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Sticky Portefeuille Overzicht */
+    .summary-card {
+      position: sticky;
+      top: 8px;
+      z-index: 100;
+      background: rgba(30, 41, 59, 0.96);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .summary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .summary-title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .summary-title {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .filter-badge {
+      font-size: 0.7rem;
+      background-color: #334155;
+      color: #cbd5e1;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .summary-item {
+      min-width: 0;
+    }
+
+    .summary-item span {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .summary-item strong {
+      font-size: 0.95rem;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .summary-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 10px;
+      border-top: 1px solid var(--card-border);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .summary-btn-group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      padding: 7px 11px;
+      transition: background 0.2s ease;
+      font-size: 0.8rem;
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background-color: #334155;
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background-color: #475569;
+    }
+
+    .btn-backup {
+      background-color: #1e293b;
+      border: 1px solid var(--card-border);
+      color: #94a3b8;
+    }
+
+    .btn-backup:hover {
+      color: var(--text-main);
+      background-color: #334155;
+    }
+
+    #statusMessage {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    /* Filters Algemeen */
+    .filter-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      align-items: center;
+      padding-bottom: 2px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .filter-btn {
+      background-color: #1e293b;
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .filter-btn:hover {
+      background-color: #334155;
+      color: var(--text-main);
+    }
+
+    .filter-btn.active {
+      background-color: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .filter-select {
+      background-color: #1e293b;
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      outline: none;
+      cursor: pointer;
+      width: auto;
+      max-width: 220px;
+    }
+
+    .filter-select:focus {
+      border-color: var(--accent);
+    }
+
+    /* Formulier Boxen */
+    .form-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      width: 100%;
+    }
+
+    .form-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .input-group label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    input, select {
+      background-color: #0f172a;
+      border: 1px solid var(--card-border);
+      color: white;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      outline: none;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    select option {
+      background-color: #0f172a;
+      color: white;
+    }
+
+    .helper-text {
+      font-size: 0.7rem;
+      color: var(--accent);
+      min-height: 14px;
+      margin-top: 2px;
+      word-break: break-word;
+    }
+
+    /* Transactie Boxen */
+    .cards-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .crypto-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px;
+      position: relative;
+      width: 100%;
+      transition: all 0.25s ease;
+    }
+
+    .crypto-card.is-sold {
+      border-color: #475569;
+      background-color: #1a2333;
+    }
+
+    .crypto-card.highlight-card {
+      border-color: var(--accent) !important;
+      background-color: #1e3256 !important;
+      box-shadow: 0 0 16px rgba(59, 130, 246, 0.45);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .coin-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .coin-badge {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-status {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      display: inline-block;
+    }
+
+    .badge-status.open {
+      background-color: rgba(34, 197, 94, 0.15);
+      color: var(--profit);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+    }
+
+    .badge-status.sold {
+      background-color: rgba(239, 68, 68, 0.15);
+      color: var(--loss);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .badge-status.part-sold {
+      background-color: rgba(245, 158, 11, 0.15);
+      color: var(--part-sold);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .meta-info {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .purchase-details {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      margin-bottom: 10px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .card-divider {
+      height: 1px;
+      background-color: var(--card-border);
+      margin: 8px 0;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      padding-top: 4px;
+    }
+
+    .metric-col {
+      min-width: 0;
+    }
+
+    .metric-col span {
+      display: block;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .metric-col strong {
+      font-size: 0.88rem;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .val-profit { color: var(--profit); }
+    .val-loss { color: var(--loss); }
+
+    .card-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .btn-action {
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      padding: 4px 8px;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+    }
+
+    .btn-action:hover {
+      color: var(--text-main);
+      background-color: #334155;
+    }
+
+    .btn-action.sold-action {
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    .btn-action.sold-action:hover {
+      background-color: rgba(56, 189, 248, 0.15);
+      color: #bae6fd;
+    }
+
+    .btn-action.delete:hover {
+      color: var(--loss);
+      border-color: var(--loss);
+      background-color: transparent;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 30px 16px;
+      color: var(--text-muted);
+      border: 2px dashed var(--card-border);
+      border-radius: 12px;
+      font-size: 0.9rem;
+    }
+
+    /* Tabelweergave Pagina */
+    #tableViewContainer {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .table-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px;
+      overflow-x: auto;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      text-align: left;
+      min-width: 480px;
+    }
+
+    .data-table th {
+      background-color: #0f172a;
+      color: var(--text-muted);
+      padding: 10px 10px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border);
+      white-space: nowrap;
+    }
+
+    .data-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #1e2d42;
+      white-space: nowrap;
+      color: #cbd5e1;
+    }
+
+    .data-table tfoot td {
+      background-color: #0c1424;
+      border-top: 2px solid var(--card-border);
+      border-bottom: none;
+      font-weight: 700;
+      padding: 10px 10px;
+    }
+
+    .data-table tr.clickable-row {
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .data-table tr.clickable-row:hover td {
+      background-color: #24324a;
+    }
+
+    .date-open {
+      color: var(--profit) !important;
+      font-weight: 600;
+    }
+
+    .date-sold {
+      color: var(--loss) !important;
+      font-weight: 600;
+    }
+
+    .date-part {
+      color: var(--part-sold) !important;
+      font-weight: 600;
+    }
+
+    #fallbackFileInput {
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 8px;
+      }
+
+      .summary-card {
+        padding: 12px;
+        top: 4px;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .form-card {
+        padding: 14px;
+      }
+
+      .summary-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .summary-btn-group {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .summary-btn-group button {
+        flex: 1 1 auto;
+        min-width: calc(50% - 6px);
+        text-align: center;
+      }
+
+      #statusMessage {
+        text-align: center;
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+        row-gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <input type="file" id="fallbackFileInput" accept=".json" onchange="handleFallbackRestore(event)">
+
+  <!-- Sticky Portefeuille Overzicht -->
+  <div class="summary-card" id="portfolioSummaryBlock">
+    <div class="summary-header">
+      <div class="summary-title-group">
+        <div class="summary-title">Portefeuille</div>
+        <div class="filter-badge" id="filterIndicator">Alles</div>
+      </div>
+    </div>
+    
+    <div class="summary-grid">
+      <div class="summary-item">
+        <span>Totale Inleg</span>
+        <strong id="totalCost">€0,00</strong>
+      </div>
+      <div class="summary-item">
+        <span>Huidige Waarde</span>
+        <strong id="totalCurrent">€0,00</strong>
+      </div>
+      <div class="summary-item">
+        <span>Ongerealiseerd</span>
+        <strong id="unrealizedProfit">€0,00</strong>
+      </div>
+      <div class="summary-item">
+        <span>Gerealiseerd</span>
+        <strong id="realizedProfit">€0,00</strong>
+      </div>
+    </div>
+
+    <div class="summary-controls">
+      <div class="summary-btn-group">
+        <button class="btn-primary" onclick="openAddForm()">+ Aankoop</button>
+        <button class="btn-secondary" id="viewToggleBtn" onclick="toggleView()">Tabel</button>
+        <button id="refreshBtn" class="btn-secondary" onclick="manualRefresh()">Verversen</button>
+        <button class="btn-backup" onclick="openBackupChoiceDialog()">Backup / Herstel</button>
+      </div>
+      <span id="statusMessage">Klaar</span>
+    </div>
+  </div>
+
+  <!-- Filters voor Kaartenweergave -->
+  <div class="filter-section" id="filterSection">
+    <div class="filter-bar" id="statusFilters"></div>
+    <div class="filter-bar" id="exchangeFilters"></div>
+  </div>
+
+  <!-- Invoer- en Bewerkformulier -->
+  <form id="purchaseForm" class="form-card" onsubmit="savePurchase(event)">
+    <div class="form-title" id="formHeading">Nieuwe Aankoop Invoeren</div>
+    <input type="hidden" id="editId" value="" />
+    
+    <div class="form-grid">
+      <div class="input-group">
+        <label for="symbol">Munt (bijv. XRP, BTC, ETH)</label>
+        <input type="text" id="symbol" placeholder="XRP" oninput="handleSymbolInput()" onblur="fetchPriceForForm(true)" required autocomplete="off" />
+        <span id="priceFetchStatus" class="helper-text"></span>
+      </div>
+
+      <div class="input-group">
+        <label for="exchangeSelect">Exchange</label>
+        <select id="exchangeSelect" onchange="handleExchangeSelectChange()" required></select>
+        <input type="text" id="customExchangeInput" placeholder="Typ naam nieuwe exchange..." style="display: none; margin-top: 4px;" />
+      </div>
+
+      <div class="input-group">
+        <label for="amount">Aantal munten (actueel)</label>
+        <input type="number" id="amount" step="any" placeholder="500" required />
+      </div>
+
+      <div class="input-group">
+        <label for="initialAmount">Oorspronkelijk aantal (start)</label>
+        <input type="number" id="initialAmount" step="any" placeholder="Optioneel, bij deels verkocht" />
+      </div>
+
+      <div class="input-group">
+        <label for="price">Aankoopprijs per stuk (€)</label>
+        <input type="number" id="price" step="any" placeholder="0.52" required />
+      </div>
+
+      <div class="input-group">
+        <label for="date">Aankoopdatum</label>
+        <input type="date" id="date" required />
+      </div>
+    </div>
+
+    <!-- Extra velden voor verkochte posities -->
+    <div id="soldEditFields" style="display:none; margin-top: 8px; border-top: 1px dashed var(--card-border); padding-top: 10px;">
+      <div class="form-grid">
+        <div class="input-group">
+          <label for="editSellPrice">Verkoopprijs per stuk (€)</label>
+          <input type="number" id="editSellPrice" step="any" />
+        </div>
+        <div class="input-group">
+          <label for="editSellDate">Verkoopdatum</label>
+          <input type="date" id="editSellDate" />
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
+      <button type="button" class="btn-secondary" onclick="closeForm()">Annuleren</button>
+      <button type="submit" class="btn-primary" id="saveBtn">Opslaan</button>
+    </div>
+  </form>
+
+  <!-- Verkoop Formulier -->
+  <form id="sellForm" class="form-card" onsubmit="confirmSale(event)">
+    <div class="form-title" id="sellFormHeading">Positie Verkopen</div>
+    <input type="hidden" id="sellId" value="" />
+
+    <div class="purchase-details" id="sellFormDetails"></div>
+
+    <div class="input-group" style="margin-bottom: 8px;">
+      <label for="sellAmount">Aantal te verkopen munten</label>
+      <input type="number" id="sellAmount" step="any" oninput="updateSellYieldPreview()" required />
+      <span class="helper-text" style="color: var(--text-muted);">Voer minder in dan het maximum om een deel te verkopen.</span>
+    </div>
+
+    <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+      <div class="input-group">
+        <label for="sellPrice">Verkoopprijs (€)</label>
+        <input type="number" id="sellPrice" step="any" oninput="updateSellYieldPreview()" required />
+      </div>
+      <div class="input-group">
+        <label for="displayPurchaseDate">Aankoopdatum</label>
+        <input type="text" id="displayPurchaseDate" readonly style="background-color: #162032; color: var(--text-muted); cursor: default;" />
+      </div>
+      <div class="input-group">
+        <label for="sellDate">Verkoopdatum</label>
+        <input type="date" id="sellDate" required />
+      </div>
+    </div>
+
+    <!-- Live opbrengst preview -->
+    <div id="sellYieldPreview" style="font-size: 0.85rem; color: var(--profit); margin-top: 6px; font-weight: 600;"></div>
+
+    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
+      <button type="button" class="btn-secondary" onclick="closeSellForm()">Annuleren</button>
+      <button type="submit" class="btn-primary" style="background-color: var(--loss);">Verkoop Bevestigen</button>
+    </div>
+  </form>
+
+  <!-- Backup & Herstel Keuze Menu Formulier -->
+  <div id="backupChoiceCard" class="form-card">
+    <div class="form-title">Backup & Herstel</div>
+    <p id="linkedFileInfo" style="font-size: 0.8rem; color: var(--accent); line-height: 1.4; display: none; background: rgba(59,130,246,0.1); padding: 8px; border-radius: 6px;"></p>
+    
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+      <button type="button" class="btn-primary" id="btnQuickBackup" onclick="executeQuickBackup()">💾 Backup Opslaan</button>
+      <button type="button" class="btn-secondary" onclick="executeBackupChoice('exportNew')">📁 Opslaan als nieuw bestand / andere locatie...</button>
+      <button type="button" class="btn-secondary" onclick="executeBackupChoice('import')">📥 Backup Herstellen (Inlezen)</button>
+      <button type="button" class="btn-backup" style="margin-top: 6px;" onclick="closeBackupChoiceDialog()">Annuleren</button>
+    </div>
+  </div>
+
+  <!-- Kaartenlijst Weergave -->
+  <div id="cardsContainer" class="cards-list"></div>
+
+  <!-- Tabelweergave Pagina -->
+  <div id="tableViewContainer">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+      <h3 style="font-size: 1.05rem; font-weight: 700;">Transactie Overzicht</h3>
+      <button class="btn-secondary" onclick="toggleView()">← Terug naar Kaarten</button>
+    </div>
+
+    <!-- Filters specifiek voor Tabelweergave -->
+    <div class="filter-section" id="tableFilterSection">
+      <div class="filter-bar" id="tableStatusFilters"></div>
+
+      <div class="filter-bar" style="flex-wrap: wrap; gap: 8px;">
+        <div id="tableExchangeFilters" style="display: flex; gap: 6px; overflow-x: auto;"></div>
+        
+        <select id="tableCoinSelect" class="filter-select" onchange="handleTableCoinChange(this.value)">
+          <option value="ALL">Alle Munten</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Munt</th>
+            <th>Aantal</th>
+            <th>Aankoopbedrag</th>
+            <th>Gerealiseerd</th>
+            <th>Ongerealiseerd</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+        <tfoot id="tableFoot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  var defaultExchanges = ['Finst', 'Kraken', 'OKX', 'Bitvavo'];
+  var customExchanges = [];
+  var purchases = [];
+  var livePrices = {};
+  var currentView = 'cards';
+  var activeFileHandle = null;
+  var selectedHighlightId = null;
+
+  try {
+    var storedEx = localStorage.getItem('crypto_custom_exchanges');
+    if (storedEx) customExchanges = JSON.parse(storedEx);
+  } catch (e) { customExchanges = []; }
+
+  try {
+    var storedPur = localStorage.getItem('crypto_purchases');
+    if (storedPur) purchases = JSON.parse(storedPur);
+  } catch (e) { purchases = []; }
+
+  function openDB() {
+    return new Promise(function(resolve, reject) {
+      var req = indexedDB.open('crypto_tracker_store_v2', 1);
+      req.onupgradeneeded = function(e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains('handles')) {
+          db.createObjectStore('handles');
+        }
+      };
+      req.onsuccess = function(e) { resolve(e.target.result); };
+      req.onerror = function(e) { reject(e); };
+    });
+  }
+
+  function saveActiveFileHandle(handle) {
+    activeFileHandle = handle;
+    openDB().then(function(db) {
+      var tx = db.transaction('handles', 'readwrite');
+      tx.objectStore('handles').put(handle, 'active_backup_file');
+    }).catch(function(){});
+  }
+
+  function loadActiveFileHandle() {
+    return openDB().then(function(db) {
+      return new Promise(function(resolve) {
+        var tx = db.transaction('handles', 'readonly');
+        var req = tx.objectStore('handles').get('active_backup_file');
+        req.onsuccess = function() {
+          if (req.result) {
+            activeFileHandle = req.result;
+          }
+          resolve();
+        };
+        req.onerror = function() { resolve(); };
+      });
+    }).catch(function(){});
+  }
+
+  function autoReconcilePartiallySold() {
+    var updated = false;
+
+    for (var i = 0; i < purchases.length; i++) {
+      if (!purchases[i].initialAmount) {
+        purchases[i].initialAmount = purchases[i].amount;
+        updated = true;
+      }
+    }
+
+    var openTrades = purchases.filter(function(p) { return !p.isSold; });
+    var soldTrades = purchases.filter(function(p) { return p.isSold; });
+
+    openTrades.forEach(function(openP) {
+      var matchingSold = soldTrades.filter(function(s) {
+        return s.symbol === openP.symbol &&
+               s.exchange === openP.exchange &&
+               s.date === openP.date &&
+               Math.abs(s.price - openP.price) < 0.000001;
+      });
+
+      if (matchingSold.length > 0) {
+        var totalSoldAmount = matchingSold.reduce(function(sum, s) { return sum + s.amount; }, 0);
+        var expectedInitial = +(openP.amount + totalSoldAmount).toFixed(8);
+
+        if (!openP.partiallySold || openP.initialAmount !== expectedInitial) {
+          openP.partiallySold = true;
+          openP.initialAmount = expectedInitial;
+          updated = true;
+        }
+      }
+    });
+
+    if (updated) {
+      try {
+        localStorage.setItem('crypto_purchases', JSON.stringify(purchases));
+      } catch (e) {}
+    }
+  }
+
+  var selectedExchangeFilter = 'ALL';
+  var selectedStatusFilter = 'ALL';
+
+  // Aangepast voor multi-select statusfilters in tabelweergave (standaard alle drie aangevinkt)
+  var tblSelectedStatuses = { OPEN: true, PARTSOLD: true, SOLD: true };
+  var tblSelectedExchangeFilter = 'ALL';
+  var tblSelectedCoinFilter = 'ALL';
+
+  var REFRESH_INTERVAL_SECONDS = 60;
+  var secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS;
+  var lastUpdatedTime = null;
+  var countdownTimer = null;
+  var symbolInputTimeout = null;
+
+  function getAllExchanges() {
+    return Array.from(new Set(defaultExchanges.concat(customExchanges)));
+  }
+
+  function formatEUR(val) {
+    return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(val || 0);
+  }
+
+  function formatAantal(val) {
+    if (val === null || val === undefined || isNaN(val)) return '0';
+    return new Intl.NumberFormat('nl-NL', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 8
+    }).format(val);
+  }
+
+  function formatKoers(val) {
+    if (val === null || val === undefined || isNaN(val)) return '€ 0,00';
+    var absVal = Math.abs(val);
+
+    if (absVal === 0) return '€ 0,00';
+
+    if (absVal < 0.01) {
+      return new Intl.NumberFormat('nl-NL', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 4,
+        maximumFractionDigits: 8
+      }).format(val);
+    } else if (absVal < 1) {
+      return new Intl.NumberFormat('nl-NL', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 4,
+        maximumFractionDigits: 4
+      }).format(val);
+    } else {
+      return new Intl.NumberFormat('nl-NL', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 4
+      }).format(val);
+    }
+  }
+
+  function formatDateNL(dateStr) {
+    if (!dateStr) return '';
+    var parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return parts[2] + '-' + parts[1] + '-' + parts[0];
+    }
+    return dateStr;
+  }
+
+  function toggleView() {
+    currentView = currentView === 'cards' ? 'table' : 'cards';
+    var cardsContainer = document.getElementById('cardsContainer');
+    var tableViewContainer = document.getElementById('tableViewContainer');
+    var filterSection = document.getElementById('filterSection');
+    var viewToggleBtn = document.getElementById('viewToggleBtn');
+
+    selectedHighlightId = null;
+
+    if (currentView === 'table') {
+      if (cardsContainer) cardsContainer.style.display = 'none';
+      if (filterSection) filterSection.style.display = 'none';
+      if (tableViewContainer) tableViewContainer.style.display = 'flex';
+      if (viewToggleBtn) viewToggleBtn.textContent = 'Kaarten';
+      renderTableFilters();
+      renderTable();
+      updateSummary();
+    } else {
+      if (tableViewContainer) tableViewContainer.style.display = 'none';
+      if (cardsContainer) cardsContainer.style.display = 'flex';
+      if (filterSection) filterSection.style.display = purchases.length > 0 ? 'flex' : 'none';
+      if (viewToggleBtn) viewToggleBtn.textContent = 'Tabel';
+      renderFilters();
+      renderCards();
+    }
+  }
+
+  function jumpToCard(id) {
+    var target = null;
+    for (var i = 0; i < purchases.length; i++) {
+      if (purchases[i].id == id) { target = purchases[i]; break; }
+    }
+
+    if (target) {
+      if (selectedStatusFilter === 'OPEN' && target.isSold) selectedStatusFilter = 'ALL';
+      if (selectedStatusFilter === 'PARTSOLD' && (!target.partiallySold || target.isSold)) selectedStatusFilter = 'ALL';
+      if (selectedStatusFilter === 'SOLD' && !target.isSold) selectedStatusFilter = 'ALL';
+      if (selectedExchangeFilter !== 'ALL' && target.exchange !== selectedExchangeFilter) selectedExchangeFilter = 'ALL';
+    }
+
+    selectedHighlightId = id;
+
+    if (currentView === 'table') {
+      currentView = 'cards';
+      var cardsContainer = document.getElementById('cardsContainer');
+      var tableViewContainer = document.getElementById('tableViewContainer');
+      var filterSection = document.getElementById('filterSection');
+      var viewToggleBtn = document.getElementById('viewToggleBtn');
+
+      if (tableViewContainer) tableViewContainer.style.display = 'none';
+      if (cardsContainer) cardsContainer.style.display = 'flex';
+      if (filterSection) filterSection.style.display = purchases.length > 0 ? 'flex' : 'none';
+      if (viewToggleBtn) viewToggleBtn.textContent = 'Tabel';
+      renderFilters();
+      renderCards();
+    } else {
+      renderFilters();
+      renderCards();
+    }
+
+    setTimeout(function() {
+      var el = document.getElementById('card_' + id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  }
+
+  function populateExchangeDropdown(selectedValue) {
+    var select = document.getElementById('exchangeSelect');
+    if (!select) return;
+    select.innerHTML = '';
+
+    var all = getAllExchanges();
+    for (var i = 0; i < all.length; i++) {
+      var opt = document.createElement('option');
+      opt.value = all[i];
+      opt.textContent = all[i];
+      if (selectedValue && all[i].toLowerCase() === selectedValue.toLowerCase()) {
+        opt.selected = true;
+      }
+      select.appendChild(opt);
+    }
+
+    var newOpt = document.createElement('option');
+    newOpt.value = '__NEW__';
+    newOpt.textContent = '+ Nieuwe exchange toevoegen...';
+    select.appendChild(newOpt);
+
+    handleExchangeSelectChange();
+  }
+
+  function handleExchangeSelectChange() {
+    var select = document.getElementById('exchangeSelect');
+    var customInput = document.getElementById('customExchangeInput');
+    if (!select || !customInput) return;
+
+    if (select.value === '__NEW__') {
+      customInput.style.display = 'block';
+      customInput.required = true;
+      customInput.focus();
+    } else {
+      customInput.style.display = 'none';
+      customInput.required = false;
+      customInput.value = '';
+    }
+  }
+
+  function setFormVisibility(showForm, formType) {
+    var summaryBlock = document.getElementById('portfolioSummaryBlock');
+    var filterSection = document.getElementById('filterSection');
+    var cardsContainer = document.getElementById('cardsContainer');
+    var tableViewContainer = document.getElementById('tableViewContainer');
+    var purchaseForm = document.getElementById('purchaseForm');
+    var sellForm = document.getElementById('sellForm');
+    var backupChoiceCard = document.getElementById('backupChoiceCard');
+
+    if (showForm) {
+      if (summaryBlock) summaryBlock.style.display = 'none';
+      if (filterSection) filterSection.style.display = 'none';
+      if (cardsContainer) cardsContainer.style.display = 'none';
+      if (tableViewContainer) tableViewContainer.style.display = 'none';
+
+      if (formType === 'purchase') {
+        if (sellForm) sellForm.style.display = 'none';
+        if (backupChoiceCard) backupChoiceCard.style.display = 'none';
+        if (purchaseForm) purchaseForm.style.display = 'flex';
+      } else if (formType === 'sell') {
+        if (purchaseForm) purchaseForm.style.display = 'none';
+        if (backupChoiceCard) backupChoiceCard.style.display = 'none';
+        if (sellForm) sellForm.style.display = 'flex';
+      } else if (formType === 'backupChoice') {
+        if (purchaseForm) purchaseForm.style.display = 'none';
+        if (sellForm) sellForm.style.display = 'none';
+        updateBackupChoiceUI();
+        if (backupChoiceCard) backupChoiceCard.style.display = 'flex';
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      if (purchaseForm) purchaseForm.style.display = 'none';
+      if (sellForm) sellForm.style.display = 'none';
+      if (backupChoiceCard) backupChoiceCard.style.display = 'none';
+      if (summaryBlock) summaryBlock.style.display = 'flex';
+      
+      if (currentView === 'table') {
+        if (tableViewContainer) tableViewContainer.style.display = 'flex';
+        renderTableFilters();
+        renderTable();
+        updateSummary();
+      } else {
+        if (filterSection) filterSection.style.display = purchases.length > 0 ? 'flex' : 'none';
+        if (cardsContainer) cardsContainer.style.display = 'flex';
+        renderFilters();
+        renderCards();
+      }
+    }
+  }
+
+  function openAddForm() {
+    selectedHighlightId = null;
+    renderCards();
+
+    var editId = document.getElementById('editId');
+    if (editId) editId.value = '';
+    var heading = document.getElementById('formHeading');
+    if (heading) heading.textContent = 'Nieuwe Aankoop Invoeren';
+    var saveBtn = document.getElementById('saveBtn');
+    if (saveBtn) saveBtn.textContent = 'Opslaan';
+
+    var sym = document.getElementById('symbol'); if (sym) sym.value = '';
+    var amt = document.getElementById('amount'); if (amt) amt.value = '';
+    var initAmt = document.getElementById('initialAmount'); if (initAmt) initAmt.value = '';
+    var prc = document.getElementById('price'); if (prc) prc.value = '';
+    var st = document.getElementById('priceFetchStatus'); if (st) st.textContent = '';
+    var dt = document.getElementById('date'); if (dt) dt.value = new Date().toISOString().split('T')[0];
+
+    var soldFields = document.getElementById('soldEditFields');
+    if (soldFields) soldFields.style.display = 'none';
+
+    populateExchangeDropdown();
+    setFormVisibility(true, 'purchase');
+  }
+
+  function editPurchase(id) {
+    selectedHighlightId = null;
+    renderCards();
+
+    var item = null;
+    for (var i = 0; i < purchases.length; i++) {
+      if (purchases[i].id == id) { item = purchases[i]; break; }
+    }
+    if (!item) return;
+
+    var editId = document.getElementById('editId'); if (editId) editId.value = item.id;
+    var heading = document.getElementById('formHeading');
+    if (heading) {
+      heading.textContent = (item.isSold ? 'Verkochte Positie ' : 'Aankoop ') + item.symbol + ' Bewerken';
+    }
+    var saveBtn = document.getElementById('saveBtn'); if (saveBtn) saveBtn.textContent = 'Wijzigingen Opslaan';
+
+    var sym = document.getElementById('symbol'); if (sym) sym.value = item.symbol;
+    var amt = document.getElementById('amount'); if (amt) amt.value = item.amount;
+    var initAmt = document.getElementById('initialAmount'); 
+    if (initAmt) initAmt.value = item.initialAmount || item.amount;
+
+    var prc = document.getElementById('price'); if (prc) prc.value = item.price;
+    var st = document.getElementById('priceFetchStatus'); if (st) st.textContent = '';
+    var dt = document.getElementById('date'); if (dt) dt.value = item.date;
+
+    var soldFields = document.getElementById('soldEditFields');
+    var editSellPrice = document.getElementById('editSellPrice');
+    var editSellDate = document.getElementById('editSellDate');
+
+    if (item.isSold) {
+      if (soldFields) soldFields.style.display = 'block';
+      if (editSellPrice) {
+        editSellPrice.value = item.sellPrice !== null ? item.sellPrice : '';
+        editSellPrice.required = true;
+      }
+      if (editSellDate) {
+        editSellDate.value = item.sellDate || new Date().toISOString().split('T')[0];
+        editSellDate.required = true;
+      }
+    } else {
+      if (soldFields) soldFields.style.display = 'none';
+      if (editSellPrice) editSellPrice.required = false;
+      if (editSellDate) editSellDate.required = false;
+    }
+
+    populateExchangeDropdown(item.exchange);
+    setFormVisibility(true, 'purchase');
+  }
+
+  function closeForm() {
+    setFormVisibility(false);
+  }
+
+  function openBackupChoiceDialog() {
+    setFormVisibility(true, 'backupChoice');
+  }
+
+  function closeBackupChoiceDialog() {
+    setFormVisibility(false);
+  }
+
+  function updateBackupChoiceUI() {
+    var info = document.getElementById('linkedFileInfo');
+    var btnQuick = document.getElementById('btnQuickBackup');
+    if (!info || !btnQuick) return;
+
+    if (activeFileHandle && activeFileHandle.name) {
+      info.style.display = 'block';
+      info.innerHTML = '📁 Gekoppeld bestand: <strong>' + activeFileHandle.name + '</strong>';
+      btnQuick.textContent = '💾 Direct Opslaan naar ' + activeFileHandle.name;
+    } else {
+      info.style.display = 'none';
+      btnQuick.textContent = '💾 Backup Maken (Locatie kiezen)';
+    }
+  }
+
+  function executeQuickBackup() {
+    if (activeFileHandle) {
+      writeToHandle(activeFileHandle);
+      closeBackupChoiceDialog();
+    } else {
+      executeBackupChoice('exportNew');
+    }
+  }
+
+  function executeBackupChoice(choice) {
+    closeBackupChoiceDialog();
+    if (choice === 'exportNew') {
+      exportBackupNewLocation();
+    } else if (choice === 'import') {
+      importBackup();
+    }
+  }
+
+  function handleSymbolInput() {
+    clearTimeout(symbolInputTimeout);
+    symbolInputTimeout = setTimeout(function() {
+      fetchPriceForForm(false);
+    }, 500);
+  }
+
+  function fetchPriceForForm(force) {
+    var editId = document.getElementById('editId');
+    if (editId && editId.value && !force) return;
+
+    var symbolInput = document.getElementById('symbol');
+    var priceInput = document.getElementById('price');
+    var statusSpan = document.getElementById('priceFetchStatus');
+    if (!symbolInput || !priceInput || !statusSpan) return;
+
+    var sym = symbolInput.value.trim().toUpperCase();
+    if (sym.length < 2) {
+      statusSpan.textContent = '';
+      return;
+    }
+
+    statusSpan.style.color = 'var(--accent)';
+    statusSpan.textContent = 'Koers van ' + sym + ' ophalen...';
+
+    fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'EUR')
+      .then(function(res) {
+        if (res.ok) return res.json();
+        throw new Error('Geen direct EUR paar');
+      })
+      .then(function(data) {
+        var p = parseFloat(data.price);
+        if (!isNaN(p) && p > 0) {
+          priceInput.value = p;
+          statusSpan.style.color = 'var(--profit)';
+          statusSpan.textContent = 'Koers ingevuld (EUR): ' + formatKoers(p);
+        }
+      })
+      .catch(function() {
+        statusSpan.textContent = 'Geen direct EUR-paar. USDT converteren...';
+
+        Promise.all([
+          fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'USDT').then(function(r) { return r.ok ? r.json() : null; }),
+          fetch('https://api.binance.com/api/v3/ticker/price?symbol=EURUSDT').then(function(r) { return r.ok ? r.json() : null; })
+        ])
+        .then(function(results) {
+          var coinUsdtData = results[0];
+          var eurUsdtData = results[1];
+
+          if (coinUsdtData && eurUsdtData) {
+            var priceInUsdt = parseFloat(coinUsdtData.price);
+            var eurUsdtRate = parseFloat(eurUsdtData.price);
+
+            if (!isNaN(priceInUsdt) && !isNaN(eurUsdtRate) && eurUsdtRate > 0) {
+              var priceInEur = priceInUsdt / eurUsdtRate;
+              priceInput.value = priceInEur;
+              statusSpan.style.color = 'var(--profit)';
+              statusSpan.textContent = 'Koers ingevuld (omgerekend via USDT): ' + formatKoers(priceInEur);
+              return;
+            }
+          }
+          throw new Error('Geen USDT paar');
+        })
+        .catch(function() {
+          statusSpan.style.color = 'var(--text-muted)';
+          statusSpan.textContent = 'Niet gevonden op Binance. Vul prijs handmatig in.';
+        });
+      });
+  }
+
+  function savePurchase(event) {
+    event.preventDefault();
+
+    var editId = document.getElementById('editId').value;
+    var symbol = document.getElementById('symbol').value.trim().toUpperCase();
+    var select = document.getElementById('exchangeSelect');
+    var exchange = select ? select.value : 'Overig';
+
+    if (exchange === '__NEW__') {
+      var customVal = document.getElementById('customExchangeInput').value.trim();
+      if (!customVal) return;
+      exchange = customVal;
+      if (!getAllExchanges().map(function(e) { return e.toLowerCase(); }).includes(exchange.toLowerCase())) {
+        customExchanges.push(exchange);
+        try { localStorage.setItem('crypto_custom_exchanges', JSON.stringify(customExchanges)); } catch(e){}
+      }
+    }
+
+    var amount = parseFloat(document.getElementById('amount').value);
+    var initAmtInput = parseFloat(document.getElementById('initialAmount').value);
+    var initialAmount = !isNaN(initAmtInput) && initAmtInput >= amount ? initAmtInput : amount;
+
+    var price = parseFloat(document.getElementById('price').value);
+    var date = document.getElementById('date').value;
+
+    if (editId) {
+      for (var i = 0; i < purchases.length; i++) {
+        if (purchases[i].id == editId) {
+          purchases[i].symbol = symbol;
+          purchases[i].exchange = exchange;
+          purchases[i].amount = amount;
+          purchases[i].initialAmount = initialAmount;
+          purchases[i].price = price;
+          purchases[i].date = date;
+
+          if (!purchases[i].isSold) {
+            purchases[i].partiallySold = (initialAmount > amount);
+          }
+
+          if (purchases[i].isSold) {
+            var esp = parseFloat(document.getElementById('editSellPrice').value);
+            var esd = document.getElementById('editSellDate').value;
+            if (!isNaN(esp)) purchases[i].sellPrice = esp;
+            if (esd) purchases[i].sellDate = esd;
+          }
+          break;
+        }
+      }
+      selectedHighlightId = null;
+    } else {
+      purchases.unshift({
+        id: Date.now(),
+        symbol: symbol,
+        exchange: exchange,
+        amount: amount,
+        initialAmount: initialAmount,
+        price: price,
+        date: date,
+        isSold: false,
+        sellPrice: null,
+        sellDate: null,
+        partiallySold: (initialAmount > amount)
+      });
+      selectedHighlightId = null;
+    }
+
+    try { localStorage.setItem('crypto_purchases', JSON.stringify(purchases)); } catch(e){}
+    closeForm();
+    renderFilters();
+    renderCards();
+    renderTableFilters();
+    renderTable();
+    updateSummary();
+    fetchLivePrices();
+  }
+
+  function openSellDialog(id) {
+    var item = null;
+    for (var i = 0; i < purchases.length; i++) {
+      if (purchases[i].id === id) { item = purchases[i]; break; }
+    }
+    if (!item) return;
+
+    var sellId = document.getElementById('sellId'); if (sellId) sellId.value = item.id;
+    var heading = document.getElementById('sellFormHeading'); if (heading) heading.textContent = item.symbol + ' Verkopen';
+    var sellAmount = document.getElementById('sellAmount');
+    if (sellAmount) {
+      sellAmount.value = item.amount;
+      sellAmount.max = item.amount;
+    }
+    var sellPrice = document.getElementById('sellPrice'); if (sellPrice) sellPrice.value = livePrices[item.symbol] || item.price;
+    
+    // Verkoopdatum op VANDAAG zetten
+    var sellDate = document.getElementById('sellDate'); 
+    if (sellDate) sellDate.value = new Date().toISOString().split('T')[0];
+
+    // Oorspronkelijke aankoopdatum tonen in het aparte readonly veld
+    var displayPurchaseDate = document.getElementById('displayPurchaseDate');
+    if (displayPurchaseDate) displayPurchaseDate.value = formatDateNL(item.date);
+
+    var dt = document.getElementById('sellFormDetails');
+    if (dt) {
+      dt.innerHTML = 'Aangekocht: <strong>' + formatAantal(item.amount) + '</strong> stuks @ ' + formatKoers(item.price) + ' (op ' + formatDateNL(item.date) + ') via ' + item.exchange;
+    }
+
+    updateSellYieldPreview();
+    setFormVisibility(true, 'sell');
+  }
+
+  function updateSellYieldPreview() {
+    var amt = parseFloat(document.getElementById('sellAmount').value) || 0;
+    var prc = parseFloat(document.getElementById('sellPrice').value) || 0;
+    var previewEl = document.getElementById('sellYieldPreview');
+    if (previewEl) {
+      var totalYield = amt * prc;
+      previewEl.textContent = 'Verwachte opbrengst: ' + formatEUR(totalYield);
+    }
+  }
+
+  function closeSellForm() {
+    setFormVisibility(false);
+  }
+
+  function confirmSale(event) {
+    event.preventDefault();
+    var sellId = document.getElementById('sellId').value;
+    var sellAmount = parseFloat(document.getElementById('sellAmount').value);
+    var sellPrice = parseFloat(document.getElementById('sellPrice').value);
+    var sellDate = document.getElementById('sellDate').value;
+
+    var item = null;
+    for (var i = 0; i < purchases.length; i++) {
+      if (purchases[i].id == sellId) {
+        item = purchases[i];
+        break;
+      }
+    }
+    if (!item) return;
+
+    if (isNaN(sellAmount) || sellAmount <= 0 || sellAmount > item.amount) {
+      alert('Voer een geldig aantal stuks in tussen 0 en ' + formatAantal(item.amount));
+      return;
+    }
+
+    if (!item.initialAmount) {
+      item.initialAmount = item.amount;
+    }
+    var currentInitial = item.initialAmount;
+    var originalDate = item.date;
+
+    if (sellAmount === item.amount) {
+      item.isSold = true;
+      item.sellPrice = sellPrice;
+      item.sellDate = sellDate;
+    } else {
+      var remaining = +(item.amount - sellAmount).toFixed(8);
+
+      var soldPart = {
+        id: Date.now(),
+        symbol: item.symbol,
+        exchange: item.exchange,
+        amount: sellAmount,
+        initialAmount: sellAmount,
+        price: item.price,
+        date: originalDate,
+        isSold: true,
+        sellPrice: sellPrice,
+        sellDate: sellDate,
+        partiallySold: false
+      };
+      purchases.unshift(soldPart);
+
+      item.initialAmount = currentInitial;
+      item.amount = remaining;
+      item.date = originalDate;
+      item.partiallySold = true;
+    }
+
+    selectedHighlightId = null;
+
+    try { localStorage.setItem('crypto_purchases', JSON.stringify(purchases)); } catch(e){}
+    closeSellForm();
+    renderFilters();
+    renderCards();
+    renderTableFilters();
+    renderTable();
+    updateSummary();
+    updateStatusDisplay();
+  }
+
+  function reopenPosition(id) {
+    if (confirm('Wil je deze positie weer heropenen?')) {
+      for (var i = 0; i < purchases.length; i++) {
+        if (purchases[i].id === id) {
+          purchases[i].isSold = false;
+          purchases[i].sellPrice = null;
+          purchases[i].sellDate = null;
+          break;
+        }
+      }
+      selectedHighlightId = null;
+      try { localStorage.setItem('crypto_purchases', JSON.stringify(purchases)); } catch(e){}
+      renderFilters();
+      renderCards();
+      renderTableFilters();
+      renderTable();
+      fetchLivePrices();
+    }
+  }
+
+  function deletePurchase(id) {
+    if (confirm('Weet je zeker dat je deze aankoopbox wilt verwijderen?')) {
+      purchases = purchases.filter(function(p) { return p.id !== id; });
+      if (selectedHighlightId === id) selectedHighlightId = null;
+      try { localStorage.setItem('crypto_purchases', JSON.stringify(purchases)); } catch(e){}
+      renderFilters();
+      renderCards();
+      renderTableFilters();
+      renderTable();
+      updateSummary();
+      updateStatusDisplay();
+    }
+  }
+
+  function getBackupJSON() {
+    return JSON.stringify({
+      app: 'CryptoTracker',
+      exportDate: new Date().toISOString(),
+      purchases: purchases,
+      customExchanges: customExchanges
+    }, null, 2);
+  }
+
+  function writeToHandle(handle) {
+    var jsonStr = getBackupJSON();
+    handle.createWritable().then(function(w) {
+      return w.write(jsonStr).then(function() { return w.close(); });
+    }).then(function() {
+      alert('Backup direct succesvol opgeslagen in ' + handle.name + '!');
+    }).catch(function(err) {
+      alert('Kon niet direct opslaan: ' + err.message + '. Kies een nieuwe locatie.');
+      exportBackupNewLocation();
+    });
+  }
+
+  function exportBackupNewLocation() {
+    if (purchases.length === 0) {
+      alert('Er zijn nog geen transacties om te backuppen.');
+      return;
+    }
+    var fileName = 'crypto_portfolio_backup.json';
+    var jsonStr = getBackupJSON();
+
+    if (window.showSaveFilePicker) {
+      window.showSaveFilePicker({
+        suggestedName: fileName,
+        types: [{ description: 'JSON Bestand', accept: { 'application/json': ['.json'] } }]
+      }).then(function(handle) {
+        saveActiveFileHandle(handle);
+        return handle.createWritable().then(function(w) {
+          return w.write(jsonStr).then(function() { return w.close(); });
+        });
+      }).then(function() {
+        alert('Backup succesvol opgeslagen en gekoppeld!');
+      }).catch(function(err) {
+        if (err.name !== 'AbortError') fallbackDownload(jsonStr, fileName);
+      });
+      return;
+    }
+    fallbackDownload(jsonStr, fileName);
+  }
+
+  function fallbackDownload(jsonStr, fileName) {
+    var blob = new Blob([jsonStr], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert('Backup gedownload als ' + fileName);
+  }
+
+  function importBackup() {
+    if (window.showOpenFilePicker) {
+      window.showOpenFilePicker({
+        multiple: false,
+        types: [{ description: 'JSON Bestand', accept: { 'application/json': ['.json'] } }]
+      }).then(function(handles) {
+        var handle = handles[0];
+        saveActiveFileHandle(handle);
+        return handle.getFile().then(function(f) { return f.text(); });
+      }).then(function(text) {
+        applyRestoredData(text);
+      }).catch(function(err) {
+        if (err.name !== 'AbortError') {
+          var input = document.getElementById('fallbackFileInput');
+          if (input) input.click();
+        }
+      });
+      return;
+    }
+    var input = document.getElementById('fallbackFileInput');
+    if (input) input.click();
+  }
+
+  function handleFallbackRestore(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      applyRestoredData(e.target.result);
+      event.target.value = '';
+    };
+    reader.readAsText(file);
+  }
+
+  function applyRestoredData(jsonString) {
+    try {
+      var data = JSON.parse(jsonString);
+      if (!data || !Array.isArray(data.purchases)) {
+        alert('Ongeldig backupbestand.');
+        return;
+      }
+      if (!confirm('Wil je ' + data.purchases.length + ' registraties herstellen?')) return;
+
+      purchases = data.purchases;
+      if (Array.isArray(data.customExchanges)) customExchanges = data.customExchanges;
+
+      autoReconcilePartiallySold();
+      selectedHighlightId = null;
+
+      try {
+        localStorage.setItem('crypto_purchases', JSON.stringify(purchases));
+        localStorage.setItem('crypto_custom_exchanges', JSON.stringify(customExchanges));
+      } catch(e){}
+
+      renderFilters();
+      renderCards();
+      renderTableFilters();
+      renderTable();
+      fetchLivePrices();
+      alert('Gegevens succesvol hersteld!');
+    } catch(err) {
+      alert('Fout bij herstellen: ' + err.message);
+    }
+  }
+
+  // Live koersen ophalen (inclusief automatische USDT naar EUR conversie fallback)
+  function fetchLivePrices() {
+    var openSymbols = [];
+    for (var i = 0; i < purchases.length; i++) {
+      if (!purchases[i].isSold) {
+        var s = purchases[i].symbol.trim().toUpperCase();
+        if (openSymbols.indexOf(s) === -1) openSymbols.push(s);
+      }
+    }
+
+    if (openSymbols.length === 0) {
+      updateStatusDisplay();
+      updateSummary();
+      return;
+    }
+
+    fetch('https://api.binance.com/api/v3/ticker/price?symbol=EURUSDT')
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(eurData) {
+        var eurUsdtRate = eurData ? parseFloat(eurData.price) : 1.08;
+
+        var promises = openSymbols.map(function(sym) {
+          return fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'EUR')
+            .then(function(r) {
+              if (r.ok) return r.json();
+              throw new Error('Geen EUR');
+            })
+            .then(function(d) {
+              if (d && d.price) {
+                livePrices[sym] = parseFloat(d.price);
+              }
+            })
+            .catch(function() {
+              return fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'USDT')
+                .then(function(r2) { return r2.ok ? r2.json() : null; })
+                .then(function(usdtData) {
+                  if (usdtData && usdtData.price) {
+                    var priceInUsdt = parseFloat(usdtData.price);
+                    livePrices[sym] = priceInUsdt / eurUsdtRate;
+                  }
+                })
+                .catch(function() {});
+            });
+        });
+
+        return Promise.all(promises);
+      })
+      .then(function() {
+        lastUpdatedTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        renderCards();
+        renderTable();
+        updateSummary();
+        secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS;
+        updateStatusDisplay();
+      });
+  }
+
+  function manualRefresh() {
+    secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS;
+    var statusMsg = document.getElementById('statusMessage');
+    if (statusMsg) statusMsg.textContent = 'Koersen ophalen...';
+    fetchLivePrices();
+  }
+
+  function updateStatusDisplay() {
+    var statusMsg = document.getElementById('statusMessage');
+    if (!statusMsg) return;
+
+    if (purchases.length === 0) {
+      statusMsg.textContent = 'Geen data';
+      return;
+    }
+    var openCount = purchases.filter(function(p) { return !p.isSold; }).length;
+    if (openCount === 0) {
+      statusMsg.textContent = 'Alles verkocht';
+      return;
+    }
+
+    if (lastUpdatedTime) {
+      statusMsg.textContent = 'Bijgewerkt: ' + lastUpdatedTime + ' (' + secondsUntilNextRefresh + 's)';
+    } else {
+      statusMsg.textContent = 'Klaar (' + secondsUntilNextRefresh + 's)';
+    }
+  }
+
+  function startAutoRefreshTimer() {
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdownTimer = setInterval(function() {
+      var openCount = purchases.filter(function(p) { return !p.isSold; }).length;
+      if (openCount > 0) {
+        secondsUntilNextRefresh--;
+        if (secondsUntilNextRefresh <= 0) {
+          secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS;
+          fetchLivePrices();
+        } else {
+          updateStatusDisplay();
+        }
+      }
+    }, 1000);
+  }
+
+  // Filterfuncties Kaartenweergave
+  function setStatusFilter(status) {
+    selectedStatusFilter = status;
+    renderStatusFilters();
+    renderCards();
+    updateSummary();
+  }
+
+  function setExchangeFilter(exchange) {
+    selectedExchangeFilter = exchange;
+    renderExchangeFilters();
+    renderCards();
+    updateSummary();
+  }
+
+  function renderStatusFilters() {
+    var container = document.getElementById('statusFilters');
+    if (!container) return;
+    container.innerHTML = '';
+
+    var hasOpen = purchases.some(function(p) { return !p.isSold && !p.partiallySold; });
+    var hasPartSold = purchases.some(function(p) { return !p.isSold && p.partiallySold; });
+    var hasSold = purchases.some(function(p) { return p.isSold; });
+
+    if (selectedStatusFilter === 'OPEN' && !hasOpen && !hasPartSold) selectedStatusFilter = 'ALL';
+    if (selectedStatusFilter === 'PARTSOLD' && !hasPartSold) selectedStatusFilter = 'ALL';
+    if (selectedStatusFilter === 'SOLD' && !hasSold) selectedStatusFilter = 'ALL';
+
+    var btnAll = document.createElement('button');
+    btnAll.className = 'filter-btn ' + (selectedStatusFilter === 'ALL' ? 'active' : '');
+    btnAll.textContent = 'Alles';
+    btnAll.onclick = function() { setStatusFilter('ALL'); };
+    container.appendChild(btnAll);
+
+    if (hasOpen || hasPartSold) {
+      var btnOpen = document.createElement('button');
+      btnOpen.className = 'filter-btn ' + (selectedStatusFilter === 'OPEN' ? 'active' : '');
+      btnOpen.textContent = 'Openstaand';
+      btnOpen.onclick = function() { setStatusFilter('OPEN'); };
+      container.appendChild(btnOpen);
+    }
+
+    if (hasPartSold) {
+      var btnPart = document.createElement('button');
+      btnPart.className = 'filter-btn ' + (selectedStatusFilter === 'PARTSOLD' ? 'active' : '');
+      btnPart.textContent = 'Deels verkocht';
+      btnPart.onclick = function() { setStatusFilter('PARTSOLD'); };
+      container.appendChild(btnPart);
+    }
+
+    if (hasSold) {
+      var btnSold = document.createElement('button');
+      btnSold.className = 'filter-btn ' + (selectedStatusFilter === 'SOLD' ? 'active' : '');
+      btnSold.textContent = 'Verkocht';
+      btnSold.onclick = function() { setStatusFilter('SOLD'); };
+      container.appendChild(btnSold);
+    }
+  }
+
+  function renderExchangeFilters() {
+    var filterBar = document.getElementById('exchangeFilters');
+    if (!filterBar) return;
+    filterBar.innerHTML = '';
+
+    var exchanges = [];
+    for (var i = 0; i < purchases.length; i++) {
+      var ex = purchases[i].exchange.trim();
+      if (ex && exchanges.indexOf(ex) === -1) exchanges.push(ex);
+    }
+
+    var allBtn = document.createElement('button');
+    allBtn.className = 'filter-btn ' + (selectedExchangeFilter === 'ALL' ? 'active' : '');
+    allBtn.textContent = 'Alle Exchanges';
+    allBtn.onclick = function() { setExchangeFilter('ALL'); };
+    filterBar.appendChild(allBtn);
+
+    exchanges.forEach(function(ex) {
+      var btn = document.createElement('button');
+      btn.className = 'filter-btn ' + (selectedExchangeFilter === ex ? 'active' : '');
+      btn.textContent = ex;
+      btn.onclick = function() { setExchangeFilter(ex); };
+      filterBar.appendChild(btn);
+    });
+  }
+
+  function renderFilters() {
+    var filterSection = document.getElementById('filterSection');
+    if (!filterSection) return;
+
+    if (purchases.length === 0) {
+      filterSection.style.display = 'none';
+      return;
+    }
+    filterSection.style.display = 'flex';
+
+    renderStatusFilters();
+    renderExchangeFilters();
+  }
+
+  function getFilteredPurchases() {
+    return purchases.filter(function(p) {
+      var matchEx = (selectedExchangeFilter === 'ALL' || p.exchange.trim() === selectedExchangeFilter);
+      var matchSt = true;
+      if (selectedStatusFilter === 'OPEN') {
+        matchSt = !p.isSold;
+      } else if (selectedStatusFilter === 'PARTSOLD') {
+        matchSt = !p.isSold && p.partiallySold;
+      } else if (selectedStatusFilter === 'SOLD') {
+        matchSt = p.isSold;
+      }
+      return matchEx && matchSt;
+    });
+  }
+
+  // Multi-select status filter functies voor de tabelweergave
+  function toggleTableStatusFilter(statusKey) {
+    tblSelectedStatuses[statusKey] = !tblSelectedStatuses[statusKey];
+    renderTableStatusFilters();
+    renderTable();
+    updateSummary();
+  }
+
+  function setTableExchangeFilter(exchange) {
+    tblSelectedExchangeFilter = exchange;
+    renderTableFilters();
+    renderTable();
+    updateSummary();
+  }
+
+  function handleTableCoinChange(coin) {
+    tblSelectedCoinFilter = coin;
+    renderTable();
+    updateSummary();
+  }
+
+  function renderTableStatusFilters() {
+    var statusContainer = document.getElementById('tableStatusFilters');
+    if (!statusContainer) return;
+    statusContainer.innerHTML = '';
+
+    var hasOpen = purchases.some(function(p) { return !p.isSold && !p.partiallySold; });
+    var hasPartSold = purchases.some(function(p) { return !p.isSold && p.partiallySold; });
+    var hasSold = purchases.some(function(p) { return p.isSold; });
+
+    if (hasOpen || hasPartSold) {
+      var btnOpen = document.createElement('button');
+      btnOpen.className = 'filter-btn ' + (tblSelectedStatuses.OPEN ? 'active' : '');
+      btnOpen.textContent = 'Openstaand';
+      btnOpen.onclick = function() { toggleTableStatusFilter('OPEN'); };
+      statusContainer.appendChild(btnOpen);
+    }
+
+    if (hasPartSold) {
+      var btnPart = document.createElement('button');
+      btnPart.className = 'filter-btn ' + (tblSelectedStatuses.PARTSOLD ? 'active' : '');
+      btnPart.textContent = 'Deels verkocht';
+      btnPart.onclick = function() { toggleTableStatusFilter('PARTSOLD'); };
+      statusContainer.appendChild(btnPart);
+    }
+
+    if (hasSold) {
+      var btnSold = document.createElement('button');
+      btnSold.className = 'filter-btn ' + (tblSelectedStatuses.SOLD ? 'active' : '');
+      btnSold.textContent = 'Verkocht';
+      btnSold.onclick = function() { toggleTableStatusFilter('SOLD'); };
+      statusContainer.appendChild(btnSold);
+    }
+  }
+
+  function renderTableFilters() {
+    renderTableStatusFilters();
+
+    var exBar = document.getElementById('tableExchangeFilters');
+    var coinSelect = document.getElementById('tableCoinSelect');
+    if (!exBar || !coinSelect) return;
+
+    exBar.innerHTML = '';
+
+    var exchanges = [];
+    var coins = [];
+    for (var i = 0; i < purchases.length; i++) {
+      var ex = purchases[i].exchange.trim();
+      if (ex && exchanges.indexOf(ex) === -1) exchanges.push(ex);
+
+      var c = purchases[i].symbol.trim().toUpperCase();
+      if (c && coins.indexOf(c) === -1) coins.push(c);
+    }
+
+    var allExBtn = document.createElement('button');
+    allExBtn.className = 'filter-btn ' + (tblSelectedExchangeFilter === 'ALL' ? 'active' : '');
+    allExBtn.textContent = 'Alle Exchanges';
+    allExBtn.onclick = function() { setTableExchangeFilter('ALL'); };
+    exBar.appendChild(allExBtn);
+
+    exchanges.forEach(function(ex) {
+      var btn = document.createElement('button');
+      btn.className = 'filter-btn ' + (tblSelectedExchangeFilter === ex ? 'active' : '');
+      btn.textContent = ex;
+      btn.onclick = function() { setTableExchangeFilter(ex); };
+      exBar.appendChild(btn);
+    });
+
+    coinSelect.innerHTML = '<option value="ALL">Alle Munten</option>';
+    coins.sort().forEach(function(coin) {
+      var opt = document.createElement('option');
+      opt.value = coin;
+      opt.textContent = coin;
+      if (tblSelectedCoinFilter === coin) {
+        opt.selected = true;
+      }
+      coinSelect.appendChild(opt);
+    });
+  }
+
+  function getTableFilteredPurchases() {
+    return purchases.filter(function(p) {
+      var matchSt = false;
+      if (p.isSold && tblSelectedStatuses.SOLD) {
+        matchSt = true;
+      } else if (!p.isSold && p.partiallySold && tblSelectedStatuses.PARTSOLD) {
+        matchSt = true;
+      } else if (!p.isSold && !p.partiallySold && tblSelectedStatuses.OPEN) {
+        matchSt = true;
+      }
+
+      var matchEx = (tblSelectedExchangeFilter === 'ALL' || p.exchange.trim() === tblSelectedExchangeFilter);
+      var matchCoin = (tblSelectedCoinFilter === 'ALL' || p.symbol.trim().toUpperCase() === tblSelectedCoinFilter);
+      return matchSt && matchEx && matchCoin;
+    });
+  }
+
+  function updateSummary() {
+    var visible = (currentView === 'table') ? getTableFilteredPurchases() : getFilteredPurchases();
+    var totalCost = 0;
+    var totalCurrent = 0;
+    var unrealizedDiff = 0;
+    var unrealizedCost = 0;
+    var realizedDiff = 0;
+    var realizedCost = 0;
+
+    for (var i = 0; i < visible.length; i++) {
+      var p = visible[i];
+      var cost = p.amount * p.price;
+      totalCost += cost;
+
+      if (p.isSold) {
+        var yieldVal = p.amount * p.sellPrice;
+        totalCurrent += yieldVal;
+        realizedDiff += (yieldVal - cost);
+        realizedCost += cost;
+      } else {
+        var curP = livePrices[p.symbol] !== undefined ? livePrices[p.symbol] : p.price;
+        var curV = p.amount * curP;
+        totalCurrent += curV;
+        unrealizedDiff += (curV - cost);
+        unrealizedCost += cost;
+      }
+    }
+
+    var uPerc = unrealizedCost > 0 ? (unrealizedDiff / unrealizedCost) * 100 : 0;
+    var rPerc = realizedCost > 0 ? (realizedDiff / realizedCost) * 100 : 0;
+
+    var ind = document.getElementById('filterIndicator');
+    if (ind) {
+      var lbl = '';
+      if (currentView === 'table') {
+        lbl = tblSelectedExchangeFilter === 'ALL' ? 'Alles' : tblSelectedExchangeFilter;
+        var activeStatuses = [];
+        if (tblSelectedStatuses.OPEN) activeStatuses.push('Open');
+        if (tblSelectedStatuses.PARTSOLD) activeStatuses.push('Deels');
+        if (tblSelectedStatuses.SOLD) activeStatuses.push('Verkocht');
+        if (activeStatuses.length > 0 && activeStatuses.length < 3) {
+          lbl += ' (' + activeStatuses.join(', ') + ')';
+        }
+        if (tblSelectedCoinFilter !== 'ALL') lbl += ' • ' + tblSelectedCoinFilter;
+      } else {
+        lbl = selectedExchangeFilter === 'ALL' ? 'Alles' : selectedExchangeFilter;
+        if (selectedStatusFilter === 'OPEN') lbl += ' (Open)';
+        if (selectedStatusFilter === 'PARTSOLD') lbl += ' (Deels verkocht)';
+        if (selectedStatusFilter === 'SOLD') lbl += ' (Verkocht)';
+      }
+      ind.textContent = lbl;
+    }
+
+    var cEl = document.getElementById('totalCost'); if (cEl) cEl.textContent = formatEUR(totalCost);
+    var vEl = document.getElementById('totalCurrent'); if (vEl) vEl.textContent = formatEUR(totalCurrent);
+
+    var uEl = document.getElementById('unrealizedProfit');
+    if (uEl) {
+      var uSign = unrealizedDiff >= 0 ? '+' : '';
+      uEl.textContent = uSign + formatEUR(unrealizedDiff) + ' (' + uSign + uPerc.toFixed(1) + '%)';
+      uEl.className = unrealizedDiff >= 0 ? 'val-profit' : 'val-loss';
+    }
+
+    var rEl = document.getElementById('realizedProfit');
+    if (rEl) {
+      var rSign = realizedDiff >= 0 ? '+' : '';
+      rEl.textContent = rSign + formatEUR(realizedDiff) + ' (' + rSign + rPerc.toFixed(1) + '%)';
+      rEl.className = realizedDiff >= 0 ? 'val-profit' : 'val-loss';
+    }
+  }
+
+  function renderCards() {
+    var container = document.getElementById('cardsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    var visible = getFilteredPurchases();
+
+    if (purchases.length === 0) {
+      container.innerHTML = '<div class="empty-state">Nog geen aankopen ingevoerd. Klik op "+ Aankoop" om te beginnen.</div>';
+      updateSummary();
+      return;
+    }
+
+    if (visible.length === 0) {
+      container.innerHTML = '<div class="empty-state">Geen posities gevonden voor de huidige selectie.</div>';
+      updateSummary();
+      return;
+    }
+
+    visible.forEach(function(p) {
+      var totalCost = p.amount * p.price;
+      var card = document.createElement('div');
+      card.id = 'card_' + p.id;
+      
+      var isHighlighted = (selectedHighlightId !== null && p.id == selectedHighlightId);
+      card.className = 'crypto-card ' + (p.isSold ? 'is-sold' : '') + (isHighlighted ? ' highlight-card' : '');
+
+      var statusBadge = '';
+      var metricsHTML = '';
+      var actionButtons = '';
+      var detailsHTML = '';
+
+      if (p.isSold) {
+        statusBadge = '<span class="badge-status sold">Verkocht: ' + formatDateNL(p.sellDate) + '</span>';
+        var totalYield = p.amount * p.sellPrice;
+        var diff = totalYield - totalCost;
+        var perc = totalCost > 0 ? (diff / totalCost) * 100 : 0;
+        var sign = diff >= 0 ? '+' : '';
+        var color = diff >= 0 ? 'val-profit' : 'val-loss';
+
+        detailsHTML = formatAantal(p.amount) + ' stuks | Inleg: <strong>' + formatEUR(totalCost) + '</strong>';
+
+        metricsHTML = '<div class="metrics-grid">' +
+          '<div class="metric-col"><span>Aankoopkoers</span><strong>' + formatKoers(p.price) + '</strong></div>' +
+          '<div class="metric-col"><span>Verkoopkoers</span><strong>' + formatKoers(p.sellPrice) + '</strong></div>' +
+          '<div class="metric-col"><span>Opbrengst</span><strong>' + formatEUR(totalYield) + '</strong></div>' +
+          '<div class="metric-col"><span>W/V</span><strong class="' + color + '">' + sign + formatEUR(diff) + ' (' + sign + perc.toFixed(1) + '%)</strong></div>' +
+        '</div>';
+
+        actionButtons = '<button class="btn-action" onclick="editPurchase(' + p.id + ')">Bewerken</button>' +
+                        '<button class="btn-action" onclick="reopenPosition(' + p.id + ')">Heropenen</button>' +
+                        '<button class="btn-action delete" onclick="deletePurchase(' + p.id + ')">Verwijderen</button>';
+      } else {
+        statusBadge = '<span class="badge-status open">Open</span>';
+        if (p.partiallySold) {
+          statusBadge += ' <span class="badge-status part-sold">Deels verkocht</span>';
+          var initial = p.initialAmount || p.amount;
+          var soldCount = +(initial - p.amount).toFixed(8);
+          detailsHTML = 'Gekocht (start): <strong>' + formatAantal(initial) + '</strong> stuks | Deels verkocht: <strong>' + formatAantal(soldCount) + '</strong> | Nog open: <strong>' + formatAantal(p.amount) + '</strong> | Inleg open: <strong>' + formatEUR(totalCost) + '</strong>';
+        } else {
+          detailsHTML = formatAantal(p.amount) + ' stuks | Inleg: <strong>' + formatEUR(totalCost) + '</strong>';
+        }
+
+        var curP = livePrices[p.symbol];
+        if (curP !== undefined) {
+          var curV = p.amount * curP;
+          var diff = curV - totalCost;
+          var perc = totalCost > 0 ? (diff / totalCost) * 100 : 0;
+          var sign = diff >= 0 ? '+' : '';
+          var color = diff >= 0 ? 'val-profit' : 'val-loss';
+
+          metricsHTML = '<div class="metrics-grid">' +
+            '<div class="metric-col"><span>Aankoopkoers</span><strong>' + formatKoers(p.price) + '</strong></div>' +
+            '<div class="metric-col"><span>Koers</span><strong>' + formatKoers(curP) + '</strong></div>' +
+            '<div class="metric-col"><span>Waarde</span><strong>' + formatEUR(curV) + '</strong></div>' +
+            '<div class="metric-col"><span>Ongerealiseerd</span><strong class="' + color + '">' + sign + formatEUR(diff) + ' (' + sign + perc.toFixed(1) + '%)</strong></div>' +
+          '</div>';
+        } else {
+          metricsHTML = '<div class="metrics-grid">' +
+            '<div class="metric-col"><span>Aankoopkoers</span><strong>' + formatKoers(p.price) + '</strong></div>' +
+            '<div class="metric-col" style="grid-column: span 3; color: var(--text-muted); font-size: 0.8rem; padding-top: 4px;">Koers laden...</div>' +
+          '</div>';
+        }
+
+        actionButtons = '<button class="btn-action sold-action" onclick="openSellDialog(' + p.id + ')">Verkocht</button>' +
+                        '<button class="btn-action" onclick="editPurchase(' + p.id + ')">Bewerken</button>' +
+                        '<button class="btn-action delete" onclick="deletePurchase(' + p.id + ')">Verwijderen</button>';
+      }
+
+      card.innerHTML = '<div class="card-header">' +
+          '<div class="coin-group"><div class="coin-badge">' + p.symbol + '</div>' + statusBadge + '</div>' +
+          '<div class="meta-info">' + p.exchange + ' • ' + formatDateNL(p.date) + '</div>' +
+        '</div>' +
+        '<div class="purchase-details">' + detailsHTML + '</div>' +
+        '<div class="card-divider"></div>' +
+        metricsHTML +
+        '<div class="card-actions">' + actionButtons + '</div>';
+
+      container.appendChild(card);
+    });
+
+    updateSummary();
+  }
+
+  // Tabelweergave
+  function renderTable() {
+    var tbody = document.getElementById('tableBody');
+    var tfoot = document.getElementById('tableFoot');
+    if (!tbody || !tfoot) return;
+    tbody.innerHTML = '';
+    tfoot.innerHTML = '';
+
+    var filtered = getTableFilteredPurchases();
+
+    if (purchases.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--text-muted);">Nog geen transacties beschikbaar.</td></tr>';
+      return;
+    }
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--text-muted);">Geen transacties gevonden voor de gekozen filters.</td></tr>';
+      return;
+    }
+
+    var sorted = filtered.slice().sort(function(a, b) {
+      var dateA = (a.isSold && a.sellDate) ? a.sellDate : a.date;
+      var dateB = (b.isSold && b.sellDate) ? b.sellDate : b.date;
+      return new Date(dateB) - new Date(dateA);
+    });
+
+    var totalOpenAmount = 0;
+    var totalOpenCost = 0;
+    var totalUnrealizedDiff = 0;
+    var hasOpenPositions = false;
+
+    sorted.forEach(function(p) {
+      var totalCost = p.amount * p.price;
+
+      var dateCellHtml = '';
+      if (p.isSold) {
+        dateCellHtml = '<span class="date-sold">' + formatDateNL(p.sellDate || p.date) + '</span>' +
+                       '<div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 1px;">In: ' + formatDateNL(p.date) + '</div>';
+      } else if (p.partiallySold) {
+        dateCellHtml = '<span class="date-part">' + formatDateNL(p.date) + '</span>';
+      } else {
+        dateCellHtml = '<span class="date-open">' + formatDateNL(p.date) + '</span>';
+      }
+
+      var realizedHtml = '-';
+      var unrealizedHtml = '-';
+
+      if (p.isSold) {
+        var totalYield = p.amount * p.sellPrice;
+        var diff = totalYield - totalCost;
+        var perc = totalCost > 0 ? (diff / totalCost) * 100 : 0;
+        var sign = diff >= 0 ? '+' : '';
+        var color = diff >= 0 ? 'val-profit' : 'val-loss';
+        realizedHtml = '<strong class="' + color + '">' + sign + formatEUR(diff) + ' (' + sign + perc.toFixed(1) + '%)</strong>';
+      } else {
+        hasOpenPositions = true;
+        totalOpenAmount += p.amount;
+        totalOpenCost += totalCost;
+
+        var curP = livePrices[p.symbol];
+        if (curP !== undefined) {
+          var curV = p.amount * curP;
+          var diff = curV - totalCost;
+          totalUnrealizedDiff += diff;
+
+          var perc = totalCost > 0 ? (diff / totalCost) * 100 : 0;
+          var sign = diff >= 0 ? '+' : '';
+          var color = diff >= 0 ? 'val-profit' : 'val-loss';
+          unrealizedHtml = '<strong class="' + color + '">' + sign + formatEUR(diff) + ' (' + sign + perc.toFixed(1) + '%)</strong>';
+        } else {
+          unrealizedHtml = '<span style="color: var(--text-muted);">Laden...</span>';
+        }
+      }
+
+      var tr = document.createElement('tr');
+      tr.className = 'clickable-row';
+      tr.title = 'Klik om naar dit invoerblok te gaan';
+      tr.onclick = function() { jumpToCard(p.id); };
+
+      tr.innerHTML = '<td>' + dateCellHtml + '</td>' +
+        '<td><strong>' + p.symbol + '</strong> <span style="font-size:0.68rem; color:var(--text-muted);">(' + p.exchange + ')</span></td>' +
+        '<td>' + formatAantal(p.amount) + '</td>' +
+        '<td>' + formatEUR(totalCost) + '</td>' +
+        '<td>' + realizedHtml + '</td>' +
+        '<td>' + unrealizedHtml + '</td>';
+
+      tbody.appendChild(tr);
+    });
+
+    if (tblSelectedCoinFilter !== 'ALL') {
+      var totalUnrealizedHtml = '-';
+      if (hasOpenPositions) {
+        var unPerc = totalOpenCost > 0 ? (totalUnrealizedDiff / totalOpenCost) * 100 : 0;
+        var unSign = totalUnrealizedDiff >= 0 ? '+' : '';
+        var unColor = totalUnrealizedDiff >= 0 ? 'val-profit' : 'val-loss';
+        totalUnrealizedHtml = '<strong class="' + unColor + '">' + unSign + formatEUR(totalUnrealizedDiff) + ' (' + unSign + unPerc.toFixed(1) + '%)</strong>';
+      }
+
+      var footTr = document.createElement('tr');
+      footTr.innerHTML = '<td>TOTAAL</td>' +
+        '<td>' + tblSelectedCoinFilter + ' (Open)</td>' +
+        '<td>' + (hasOpenPositions ? formatAantal(totalOpenAmount) : '0') + '</td>' +
+        '<td>' + formatEUR(totalOpenCost) + '</td>' +
+        '<td>-</td>' +
+        '<td>' + totalUnrealizedHtml + '</td>';
+
+      tfoot.appendChild(footTr);
+    }
+  }
+
+  // Opstartcyclus
+  window.addEventListener('DOMContentLoaded', function() {
+    var dt = document.getElementById('date'); if (dt) dt.value = new Date().toISOString().split('T')[0];
+    var sdt = document.getElementById('sellDate'); if (sdt) sdt.value = new Date().toISOString().split('T')[0];
+
+    loadActiveFileHandle().then(function() {
+      autoReconcilePartiallySold();
+      renderFilters();
+      renderCards();
+      fetchLivePrices();
+      startAutoRefreshTimer();
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -1,20 +1,17 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-  <link rel="manifest" href="manifest.json">
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      navigator.serviceWorker.register('sw.js').catch(function(err) {
-        console.log('ServiceWorker mislukt: ', err);
-      });
-    });
-  }
-</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Crypto Portfolio Tracker</title>
   
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Firebase App (v10 CDN Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <!-- Firebase Firestore -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
   <!-- Startscherm icoon voor Android (Edge, Chrome, Samsung) -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23f7931a'/%3E%3Cpath d='M64 43.5c1-6.5-4-10-10.8-12.3l2.2-8.8-5.4-1.3-2.1 8.6c-1.4-.3-2.9-.7-4.3-1l2.1-8.6-5.4-1.3-2.2 8.8c-1.2-.3-2.3-.6-3.4-.8l-7.5-1.9-1.4 5.8s4 .9 3.9 1c2.2.6 2.6 2.1 2.5 3.3l-2.5 10.2c.2 0 .3.1.5.2-.2-.1-.3-.1-.5-.2l-3.6 14.3c-.3.7-.9 1.7-2.4 1.3.1.1-3.9-1-3.9-1l-2.7 6.3 7 1.8c1.3.3 2.6.7 3.9 1l-2.2 9 5.4 1.3 2.2-8.8c1.5.4 3 .8 4.4 1.1l-2.2 8.8 5.4 1.3 2.2-9c9.3 1.8 16.3 1.1 19.3-7.4 2.4-6.8-.1-10.8-5-13.4 3.6-1 6.3-3.8 5-9.6zm-8.9 20.9c-1.7 6.8-13.1 3.1-16.8 2.2l3-12c3.7.9 15.6 2.7 13.8 9.8zm1.7-20.9c-1.5 6.2-11 3-14.1 2.3l2.7-10.9c3.1.8 13 2.3 11.4 8.6z' fill='%23ffffff'/%3E%3C/svg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23f7931a'/%3E%3Cpath d='M64 43.5c1-6.5-4-10-10.8-12.3l2.2-8.8-5.4-1.3-2.1 8.6c-1.4-.3-2.9-.7-4.3-1l2.1-8.6-5.4-1.3-2.2 8.8c-1.2-.3-2.3-.6-3.4-.8l-7.5-1.9-1.4 5.8s4 .9 3.9 1c2.2.6 2.6 2.1 2.5 3.3l-2.5 10.2c.2 0 .3.1.5.2-.2-.1-.3-.1-.5-.2l-3.6 14.3c-.3.7-.9 1.7-2.4 1.3.1.1-3.9-1-3.9-1l-2.7 6.3 7 1.8c1.3.3 2.6.7 3.9 1l-2.2 9 5.4 1.3 2.2-8.8c1.5.4 3 .8 4.4 1.1l-2.2 8.8 5.4 1.3 2.2-9c9.3 1.8 16.3 1.1 19.3-7.4 2.4-6.8-.1-10.8-5-13.4 3.6-1 6.3-3.8 5-9.6zm-8.9 20.9c-1.7 6.8-13.1 3.1-16.8 2.2l3-12c3.7.9 15.6 2.7 13.8 9.8zm1.7-20.9c-1.5 6.2-11 3-14.1 2.3l2.7-10.9c3.1.8 13 2.3 11.4 8.6z' fill='%23ffffff'/%3E%3C/svg%3E">
@@ -819,6 +816,20 @@
 </div>
 
 <script>
+  // Jouw Firebase configuratie
+  var firebaseConfig = {
+    apiKey: "AIzaSyAgYZtnIb_SrQIi1L5Owk0cPc4zB3sucx4",
+    authDomain: "cryptotrackersync.firebaseapp.com",
+    projectId: "cryptotrackersync",
+    storageBucket: "cryptotrackersync.firebasestorage.app",
+    messagingSenderId: "437763206233",
+    appId: "1:437763206233:web:440db905523f2c2740d548"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.firestore();
+  var SYNC_ID = "mijn_unieke_crypto_portfolio";
+
   var defaultExchanges = ['Finst', 'Kraken', 'OKX', 'Bitvavo'];
   var customExchanges = [];
   var purchases = [];
@@ -827,52 +838,43 @@
   var activeFileHandle = null;
   var selectedHighlightId = null;
 
-  try {
-    var storedEx = localStorage.getItem('crypto_custom_exchanges');
-    if (storedEx) customExchanges = JSON.parse(storedEx);
-  } catch (e) { customExchanges = []; }
+  function loadCloudData() {
+    var statusMsg = document.getElementById('statusMessage');
+    if (statusMsg) statusMsg.textContent = 'Cloud data laden...';
 
-  try {
-    var storedPur = localStorage.getItem('crypto_purchases');
-    if (storedPur) purchases = JSON.parse(storedPur);
-  } catch (e) { purchases = []; }
-
-  function openDB() {
-    return new Promise(function(resolve, reject) {
-      var req = indexedDB.open('crypto_tracker_store_v2', 1);
-      req.onupgradeneeded = function(e) {
-        var db = e.target.result;
-        if (!db.objectStoreNames.contains('handles')) {
-          db.createObjectStore('handles');
-        }
-      };
-      req.onsuccess = function(e) { resolve(e.target.result); };
-      req.onerror = function(e) { reject(e); };
+    db.collection("portfolios").doc(SYNC_ID).get().then(function(doc) {
+      if (doc.exists) {
+        var data = doc.data();
+        purchases = data.purchases || [];
+        customExchanges = data.customExchanges || [];
+      } else {
+        purchases = [];
+        customExchanges = [];
+      }
+      autoReconcilePartiallySold();
+      renderFilters();
+      renderCards();
+      renderTableFilters();
+      renderTable();
+      fetchLivePrices();
+      if (statusMsg) statusMsg.textContent = 'Klaar';
+    }).catch(function(error) {
+      console.error("Fout bij laden van cloud:", error);
+      if (statusMsg) statusMsg.textContent = 'Fout bij laden';
     });
   }
 
-  function saveActiveFileHandle(handle) {
-    activeFileHandle = handle;
-    openDB().then(function(db) {
-      var tx = db.transaction('handles', 'readwrite');
-      tx.objectStore('handles').put(handle, 'active_backup_file');
-    }).catch(function(){});
-  }
-
-  function loadActiveFileHandle() {
-    return openDB().then(function(db) {
-      return new Promise(function(resolve) {
-        var tx = db.transaction('handles', 'readonly');
-        var req = tx.objectStore('handles').get('active_backup_file');
-        req.onsuccess = function() {
-          if (req.result) {
-            activeFileHandle = req.result;
-          }
-          resolve();
-        };
-        req.onerror = function() { resolve(); };
-      });
-    }).catch(function(){});
+  function saveToCloud() {
+    db.collection("portfolios").doc(SYNC_ID).set({
+      purchases: purchases,
+      customExchanges: customExchanges,
+      lastUpdated: new Date().toISOString()
+    }).then(function() {
+      var statusMsg = document.getElementById('statusMessage');
+      if (statusMsg) statusMsg.textContent = 'Opgeslagen in cloud';
+    }).catch(function(error) {
+      console.error("Fout bij opslaan naar cloud:", error);
+    });
   }
 
   function autoReconcilePartiallySold() {
@@ -909,16 +911,13 @@
     });
 
     if (updated) {
-      try {
-        localStorage.setItem('crypto_purchases', JSON.stringify(purchases));
-      } catch (e) {}
+      saveToCloud();
     }
   }
 
   var selectedExchangeFilter = 'ALL';
   var selectedStatusFilter = 'ALL';
 
-  // Aangepast voor multi-select statusfilters in tabelweergave (standaard alle drie aangevinkt)
   var tblSelectedStatuses = { OPEN: true, PARTSOLD: true, SOLD: true };
   var tblSelectedExchangeFilter = 'ALL';
   var tblSelectedCoinFilter = 'ALL';
@@ -1346,7 +1345,6 @@
       exchange = customVal;
       if (!getAllExchanges().map(function(e) { return e.toLowerCase(); }).includes(exchange.toLowerCase())) {
         customExchanges.push(exchange);
-        try { localStorage.setItem('crypto_custom_exchanges', JSON.stringify(customExchanges)); } catch(e){}
       }
     }
 
@@ -1398,7 +1396,7 @@
       selectedHighlightId = null;
     }
 
-    try { localStorage.setItem('crypto_purchases', JSON.stringify(purchases)); } catch(e){}
+    saveToCloud();
     closeForm();
     renderFilters();
     renderCards();
@@ -1424,11 +1422,9 @@
     }
     var sellPrice = document.getElementById('sellPrice'); if (sellPrice) sellPrice.value = livePrices[item.symbol] || item.price;
     
-    // Verkoopdatum op VANDAAG zetten
     var sellDate = document.getElementById('sellDate'); 
     if (sellDate) sellDate.value = new Date().toISOString().split('T')[0];
 
-    // Oorspronkelijke aankoopdatum tonen in het aparte readonly veld
     var displayPurchaseDate = document.getElementById('displayPurchaseDate');
     if (displayPurchaseDate) displayPurchaseDate.value = formatDateNL(item.date);
 
@@ -1512,7 +1508,7 @@
 
     selectedHighlightId = null;
 
-    try { localStorage.setItem('crypto_purchases', JSON.stringify(purchases)); } catch(e){}
+    saveToCloud();
     closeSellForm();
     renderFilters();
     renderCards();
@@ -1533,7 +1529,7 @@
         }
       }
       selectedHighlightId = null;
-      try { localStorage.setItem('crypto_purchases', JSON.stringify(purchases)); } catch(e){}
+      saveToCloud();
       renderFilters();
       renderCards();
       renderTableFilters();
@@ -1546,7 +1542,7 @@
     if (confirm('Weet je zeker dat je deze aankoopbox wilt verwijderen?')) {
       purchases = purchases.filter(function(p) { return p.id !== id; });
       if (selectedHighlightId === id) selectedHighlightId = null;
-      try { localStorage.setItem('crypto_purchases', JSON.stringify(purchases)); } catch(e){}
+      saveToCloud();
       renderFilters();
       renderCards();
       renderTableFilters();
@@ -1666,11 +1662,7 @@
       autoReconcilePartiallySold();
       selectedHighlightId = null;
 
-      try {
-        localStorage.setItem('crypto_purchases', JSON.stringify(purchases));
-        localStorage.setItem('crypto_custom_exchanges', JSON.stringify(customExchanges));
-      } catch(e){}
-
+      saveToCloud();
       renderFilters();
       renderCards();
       renderTableFilters();
@@ -2299,18 +2291,13 @@
     }
   }
 
-  // Opstartcyclus
+  // Opstartcyclus: data inladen uit Cloud
   window.addEventListener('DOMContentLoaded', function() {
     var dt = document.getElementById('date'); if (dt) dt.value = new Date().toISOString().split('T')[0];
     var sdt = document.getElementById('sellDate'); if (sdt) sdt.value = new Date().toISOString().split('T')[0];
 
-    loadActiveFileHandle().then(function() {
-      autoReconcilePartiallySold();
-      renderFilters();
-      renderCards();
-      fetchLivePrices();
-      startAutoRefreshTimer();
-    });
+    loadCloudData();
+    startAutoRefreshTimer();
   });
 </script>
 

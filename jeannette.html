@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Crypto Portfolio Tracker</title>
+  <title>Crypto Portfolio Tracker - Jeannette</title>
   
   <link rel="manifest" href="manifest.json">
 
@@ -620,7 +620,7 @@
   <input type="file" id="fallbackFileInput" accept=".json" onchange="handleFallbackRestore(event)">
 
   <!-- Sticky Portefeuille Overzicht -->
-<div class="summary-card" id="portfolioSummaryBlock">
+  <div class="summary-card" id="portfolioSummaryBlock">
     <div class="summary-header">
       <div class="summary-title-group">
         <div class="summary-title">Portefeuille</div>
@@ -628,7 +628,6 @@
       </div>
     </div>
 
-    
     <div class="summary-grid">
       <div class="summary-item">
         <span>Totale Inleg</span>
@@ -814,10 +813,11 @@
       </table>
     </div>
   </div>
-  <!-- Versieblokje in dezelfde stijl als de kaarten -->
-<div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
+
+  <!-- Versieblokje netjes binnen de container -->
+  <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
     <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 1.1.0</span>
-</div>
+  </div>
 </div>
 
 <script>
@@ -1586,7 +1586,6 @@
     var fileName = 'crypto_portfolio_jeannette_backup.json';
     var jsonStr = getBackupJSON();
 
-    // Probeer de moderne File Picker, val direct terug op normale download als het niet kan
     if (window.showSaveFilePicker) {
       window.showSaveFilePicker({
         suggestedName: fileName,
@@ -1599,23 +1598,11 @@
       }).then(function() {
         alert('Backup succesvol opgeslagen en gekoppeld!');
       }).catch(function(err) {
-        if (err.name !== 'AbortError') {
-          fallbackDownload(jsonStr, fileName);
-        }
+        if (err.name !== 'AbortError') fallbackDownload(jsonStr, fileName);
       });
-    } else {
-      fallbackDownload(jsonStr, fileName);
+      return;
     }
-  }
-
-  function importBackup() {
-    // Direct via de traditionele file-input op mobiel/browsers die geen File Picker ondersteunen
-    var input = document.getElementById('fallbackFileInput');
-    if (input) {
-      input.click();
-    } else {
-      alert('Herstellen via bestand is op dit apparaat niet beschikbaar.');
-    }
+    fallbackDownload(jsonStr, fileName);
   }
 
   function fallbackDownload(jsonStr, fileName) {
@@ -2317,10 +2304,6 @@
     loadCloudData();
     startAutoRefreshTimer();
   });
-  <!-- Versieblokje in dezelfde stijl als de kaarten -->
-<div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 1.1.0</span>
-</div>
 </script>
 </body>
 </html>

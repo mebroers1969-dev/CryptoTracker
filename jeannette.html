@@ -620,13 +620,13 @@
   <input type="file" id="fallbackFileInput" accept=".json" onchange="handleFallbackRestore(event)">
 
   <!-- Sticky Portefeuille Overzicht -->
-  <div class="summary-card" id="portfolioSummaryBlock">
-    <div class="summary-header">
-      <div class="summary-title-group">
-        <div class="summary-title">Portefeuille</div>
-        <div class="filter-badge" id="filterIndicator">Alles</div>
-      </div>
-    </div>
+  <div class="summary-title-group" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <div class="summary-title">Portefeuille</div>
+    <div class="filter-badge" id="filterIndicator">Alles</div>
+  </div>
+  <span style="font-size: 11px; color: #888; font-weight: normal;">v1.1.0</span>
+</div>
     
     <div class="summary-grid">
       <div class="summary-item">
@@ -2300,8 +2300,5 @@
     startAutoRefreshTimer();
   });
 </script>
-<footer style="text-align: center; font-size: 11px; color: #888; margin-top: 20px;">
-  Versie 1.1.0
-</footer>
 </body>
 </html>

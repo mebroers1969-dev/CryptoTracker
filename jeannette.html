@@ -1583,9 +1583,10 @@
       alert('Er zijn nog geen transacties om te backuppen.');
       return;
     }
-    var fileName = 'crypto_portfolio_backup.json';
+    var fileName = 'crypto_portfolio_jeannette_backup.json';
     var jsonStr = getBackupJSON();
 
+    // Probeer de moderne File Picker, val direct terug op normale download als het niet kan
     if (window.showSaveFilePicker) {
       window.showSaveFilePicker({
         suggestedName: fileName,
@@ -1598,11 +1599,23 @@
       }).then(function() {
         alert('Backup succesvol opgeslagen en gekoppeld!');
       }).catch(function(err) {
-        if (err.name !== 'AbortError') fallbackDownload(jsonStr, fileName);
+        if (err.name !== 'AbortError') {
+          fallbackDownload(jsonStr, fileName);
+        }
       });
-      return;
+    } else {
+      fallbackDownload(jsonStr, fileName);
     }
-    fallbackDownload(jsonStr, fileName);
+  }
+
+  function importBackup() {
+    // Direct via de traditionele file-input op mobiel/browsers die geen File Picker ondersteunen
+    var input = document.getElementById('fallbackFileInput');
+    if (input) {
+      input.click();
+    } else {
+      alert('Herstellen via bestand is op dit apparaat niet beschikbaar.');
+    }
   }
 
   function fallbackDownload(jsonStr, fileName) {

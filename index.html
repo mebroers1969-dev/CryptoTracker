@@ -158,6 +158,10 @@
     .btn-secondary:hover { background-color: #475569; }
     .btn-backup { background-color: #1e293b; border: 1px solid var(--card-border); color: #94a3b8; }
     .btn-backup:hover { color: var(--text-main); background-color: #334155; }
+    .btn-analyse-nav { background-color: #7c3aed; color: white; }
+    .btn-analyse-nav:hover { background-color: #6d28d9; }
+    .btn-chart-nav { background-color: #0ea5e9; color: white; }
+    .btn-chart-nav:hover { background-color: #0284c7; }
 
     #statusMessage {
       font-size: 0.72rem;
@@ -278,9 +282,8 @@
     .btn-action.sold-action { color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); }
     .btn-action.sold-action:hover { background-color: rgba(56, 189, 248, 0.15); color: #bae6fd; }
     .btn-action.delete:hover { color: var(--loss); border-color: var(--loss); background-color: transparent; }
-    
-    .btn-action.analyse-action { color: #c084fc; border-color: rgba(192, 132, 252, 0.4); }
-    .btn-action.analyse-action:hover { background-color: rgba(192, 132, 252, 0.15); color: #e9d5ff; }
+    .btn-action.chart-action { color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); }
+    .btn-action.chart-action:hover { background-color: rgba(56, 189, 248, 0.15); color: #bae6fd; }
 
     .empty-state { text-align: center; padding: 30px 16px; color: var(--text-muted); border: 2px dashed var(--card-border); border-radius: 12px; font-size: 0.9rem; }
 
@@ -297,7 +300,20 @@
     .date-sold { color: var(--loss) !important; font-weight: 600; }
     .date-part { color: var(--part-sold) !important; font-weight: 600; }
 
+    /* Analyse Pagina Container & 3-Koloms Grid */
+    #analysisPageView { display: none; flex-direction: column; gap: 12px; width: 100%; }
+    .analysis-row-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; align-items: center; width: 100%; }
+
+    /* --- BEGIN TRADINGVIEW GRAFIEK STYLING --- */
+    #chartPageView { display: none; flex-direction: column; gap: 12px; width: 100%; }
+    .tradingview-container { width: 100%; height: 500px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
+    /* --- EINDE TRADINGVIEW GRAFIEK STYLING --- */
+
     #fallbackFileInput { display: none; }
+
+    @media (max-width: 700px) {
+      .analysis-row-grid { grid-template-columns: 1fr; gap: 8px; }
+    }
 
     @media (max-width: 600px) {
       body { padding: 8px; }
@@ -316,7 +332,7 @@
 <body>
 
 <div class="container">
-  <input type="file" id="fallbackFileInput" accept=".json" onchange="handleFallbackRestore(event)">
+  <input type="file" id="fallbackFileInput" accept=".json" onchange="loadFallbackRestore(event)">
 
   <!-- Sticky Portefeuille Overzicht -->
   <div class="summary-card" id="portfolioSummaryBlock">
@@ -338,6 +354,8 @@
       <div class="summary-btn-group">
         <button class="btn-primary" onclick="openAddForm()">+ Aankoop</button>
         <button class="btn-secondary" id="viewToggleBtn" onclick="toggleView()">Tabel</button>
+        <button class="btn-analyse-nav" id="analyseNavBtn" onclick="toggleAnalysisPage()">Analyse</button>
+        <button class="btn-chart-nav" id="chartNavBtn" onclick="openChartTab('BTC')">Grafiek</button>
         <button id="refreshBtn" class="btn-secondary" onclick="manualRefresh()">Verversen</button>
         <button class="btn-backup" onclick="openBackupChoiceDialog()">Backup / Herstel</button>
       </div>
@@ -450,17 +468,6 @@
     </div>
   </div>
 
-  <!-- Analyse Modal -->
-  <div id="analysisModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); z-index:9999; justify-content:center; align-items:center; padding:16px;">
-    <div class="form-card" style="display:flex; max-width: 450px; width: 100%; border-color: var(--accent);">
-      <div class="form-title" id="analysisTitle" style="color: #c084fc;">Marktanalyse</div>
-      <div id="analysisContent" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 5px;">Laden...</div>
-      <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
-        <button class="btn-secondary" onclick="closeAnalysisModal()">Sluiten</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Kaartenlijst Weergave -->
   <div id="cardsContainer" class="cards-list"></div>
 
@@ -497,10 +504,58 @@
     </div>
   </div>
 
+  <!-- MARKTANALYSE PAGINA -->
+  <div id="analysisPageView">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+      <div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: #c084fc;">Live Marktanalyse & Futures Signalen</h3>
+        <div id="analysisStatusMsg" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Wordt automatisch elke 10 minuten vernieuwd...</div>
+      </div>
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <button class="btn-secondary" onclick="loadBatchAnalysis()">Verversen</button>
+        <button class="btn-secondary" onclick="toggleAnalysisPage()">← Terug</button>
+      </div>
+    </div>
+
+    <!-- Tijdframe Kiezer -->
+    <div class="filter-bar" id="analysisIntervalFilters" style="margin-bottom: 6px; gap: 6px;">
+      <span style="font-size: 0.75rem; color: var(--text-muted); margin-right: 4px;">Tijdsduur:</span>
+      <button class="filter-btn" onclick="setAnalysisInterval('1d', this)">Dag (1d)</button>
+      <button class="filter-btn active" onclick="setAnalysisInterval('1h', this)">Uur (1u)</button>
+      <button class="filter-btn" onclick="setAnalysisInterval('30m', this)">30 min</button>
+      <button class="filter-btn" onclick="setAnalysisInterval('15m', this)">15 min</button>
+    </div>
+
+    <div id="analysisListContainer" style="display: flex; flex-direction: column; gap: 10px;">
+      <!-- Wordt dynamisch gevuld -->
+    </div>
+  </div>
+
+  <!-- --- BEGIN TRADINGVIEW GRAFIEK TABBLAD --- -->
+  <div id="chartPageView">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <h3 id="chartPageTitle" style="font-size: 1.05rem; font-weight: 700; color: #38bdf8;">Grafiek</h3>
+        <select id="chartCoinSelector" class="filter-select" onchange="switchChartCoin(this.value)" style="padding: 4px 10px; font-size: 0.75rem;">
+          <!-- Dynamisch gevuld -->
+        </select>
+      </div>
+      <!-- Aangepast zodat hij terugkeert naar de analyse-pagina in plaats van de kaarten -->
+      <button class="btn-secondary" onclick="closeChartTabToAnalysis()">← Terug naar Analyse</button>
+    </div>
+    <div class="tradingview-container" id="tradingviewWidgetWrapper">
+      <!-- TradingView Widget Widget Inhoud -->
+    </div>
+  </div>
+  <!-- --- EINDE TRADINGVIEW GRAFIEK TABBLAD --- -->
+
   <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 1.2.3</span>
+    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 1.5.1</span>
   </div>
 </div>
+
+<!-- TradingView Script Library -->
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 
 <script>
   // Firebase configuratie
@@ -522,10 +577,13 @@
   var purchases = [];
   var livePrices = {};
   var currentView = 'cards';
+  var isAnalysisActive = false;
+  var isChartActive = false;
+  var analysisTimer = null;
+  var currentAnalysisInterval = '1h';
   var activeFileHandle = null;
   var selectedHighlightId = null;
 
-  // Detecteer of het een mobiel apparaat/tablet is (om de onbetrouwbare mobiele bestandskiezer te omzeilen)
   var isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   function loadCloudData() {
@@ -624,6 +682,8 @@
   }
 
   function toggleView() {
+    if (isAnalysisActive) toggleAnalysisPage();
+    if (isChartActive) closeChartTab();
     currentView = currentView === 'cards' ? 'table' : 'cards';
     var cardsContainer = document.getElementById('cardsContainer');
     var tableViewContainer = document.getElementById('tableViewContainer');
@@ -649,7 +709,265 @@
     }
   }
 
+  // --- ANALYSE PAGINA ---
+  function toggleAnalysisPage() {
+    if (isChartActive) closeChartTab();
+    isAnalysisActive = !isAnalysisActive;
+    var cardsContainer = document.getElementById('cardsContainer');
+    var tableViewContainer = document.getElementById('tableViewContainer');
+    var filterSection = document.getElementById('filterSection');
+    var analysisView = document.getElementById('analysisPageView');
+    var analyseNavBtn = document.getElementById('analyseNavBtn');
+
+    if (isAnalysisActive) {
+      if (cardsContainer) cardsContainer.style.display = 'none';
+      if (tableViewContainer) tableViewContainer.style.display = 'none';
+      if (filterSection) filterSection.style.display = 'none';
+      if (analysisView) analysisView.style.display = 'flex';
+      if (analyseNavBtn) analyseNavBtn.style.backgroundColor = '#581c87';
+      
+      loadBatchAnalysis();
+      if (!analysisTimer) {
+        analysisTimer = setInterval(function() {
+          if (isAnalysisActive) loadBatchAnalysis();
+        }, 600000); // 10 minuten
+      }
+    } else {
+      if (analysisView) analysisView.style.display = 'none';
+      if (analyseNavBtn) analyseNavBtn.style.backgroundColor = '#7c3aed';
+      if (analysisTimer) { clearInterval(analysisTimer); analysisTimer = null; }
+
+      if (currentView === 'table') {
+        if (tableViewContainer) tableViewContainer.style.display = 'flex';
+      } else {
+        if (cardsContainer) cardsContainer.style.display = 'flex';
+        if (filterSection) filterSection.style.display = purchases.length > 0 ? 'flex' : 'none';
+      }
+    }
+  }
+
+  function setAnalysisInterval(interval, btnElement) {
+    currentAnalysisInterval = interval;
+    var container = document.getElementById('analysisIntervalFilters');
+    if (container) {
+      var btns = container.getElementsByClassName('filter-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.remove('active');
+      }
+    }
+    if (btnElement) btnElement.classList.add('active');
+    loadBatchAnalysis();
+  }
+
+  function loadBatchAnalysis() {
+    var statusMsg = document.getElementById('analysisStatusMsg');
+    var container = document.getElementById('analysisListContainer');
+    if (!container) return;
+
+    var openCoins = [];
+    for (var i = 0; i < purchases.length; i++) {
+      if (!purchases[i].isSold) {
+        var sym = purchases[i].symbol.trim().toUpperCase();
+        if (openCoins.indexOf(sym) === -1) openCoins.push(sym);
+      }
+    }
+
+    if (openCoins.length === 0) {
+      container.innerHTML = '<div class="empty-state">Geen openstaande munten in de portefeuille om te analyseren.</div>';
+      if (statusMsg) statusMsg.textContent = 'Klaar';
+      return;
+    }
+
+    if (statusMsg) statusMsg.textContent = 'Marktdata ophalen (' + currentAnalysisInterval + ') voor ' + openCoins.length + ' munten...';
+    container.innerHTML = '<div style="text-align:center; padding: 30px; color: var(--text-muted);">Technische indicatoren berekenen...</div>';
+
+    var promises = openCoins.map(function(sym) {
+      return fetch('https://api.binance.com/api/v3/klines?symbol=' + sym + 'USDT&interval=' + currentAnalysisInterval + '&limit=100')
+        .then(function(res) {
+          if (!res.ok) throw new Error('Geen data');
+          return res.json();
+        })
+        .then(function(data) {
+          var closes = data.map(function(candle) { return parseFloat(candle[4]); });
+          return { symbol: sym, closes: closes, error: false };
+        })
+        .catch(function() {
+          return { symbol: sym, closes: [], error: true };
+        });
+    });
+
+    Promise.all(promises).then(function(results) {
+      container.innerHTML = '';
+      var timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      if (statusMsg) statusMsg.textContent = 'Laatst bijgewerkt om ' + timeString + ' (' + currentAnalysisInterval + ', ververst elke 10m)';
+
+      results.forEach(function(res) {
+        var card = document.createElement('div');
+        card.className = 'crypto-card';
+
+        if (res.error || res.closes.length < 50) {
+          card.innerHTML = '<div class="card-header"><div class="coin-group"><div class="coin-badge">' + res.symbol + '</div></div>' +
+                           '<div class="meta-info" style="color: var(--loss);">Geen USDT-paar of onvoldoende data</div></div>';
+        } else {
+          var closes = res.closes;
+          var currentPrice = closes[closes.length - 1];
+          var rsi = calcRSI(closes, 14);
+
+          var shortPeriod = (currentAnalysisInterval === '15m' || currentAnalysisInterval === '30m') ? 9 : 20;
+          var longPeriod = (currentAnalysisInterval === '15m' || currentAnalysisInterval === '30m') ? 21 : 50;
+
+          var emaShort = calcEMA(closes, shortPeriod);
+          var emaLong = calcEMA(closes, longPeriod);
+
+          var rsiSignal = 'Neutraal'; var rsiColor = '#94a3b8';
+          if (rsi < 30) { rsiSignal = 'Oversold (Kans!)'; rsiColor = 'var(--profit)'; }
+          else if (rsi > 70) { rsiSignal = 'Overbought (Let op!)'; rsiColor = 'var(--loss)'; }
+
+          var emaSignal = 'Zijwaarts'; var emaColor = '#94a3b8';
+          if (emaShort > emaLong && currentPrice > emaShort) { emaSignal = 'Bullish (Stijgend)'; emaColor = 'var(--profit)'; }
+          else if (emaShort < emaLong && currentPrice < emaShort) { emaSignal = 'Bearish (Dalend)'; emaColor = 'var(--loss)'; }
+          else if (emaShort > emaLong && currentPrice < emaShort) { emaSignal = 'Correctie in stijgende trend'; emaColor = '#f59e0b'; }
+
+          var score = 0;
+          if (rsi < 35) score++; else if (rsi > 65) score--;
+          if (emaShort > emaLong) score++; else score--;
+          if (currentPrice > emaShort) score++; else score--;
+
+          var overall = 'HOUDEN / NEUTRAAL'; var ovColor = '#f59e0b';
+          if (score >= 2) {
+            overall = 'KOPEN';
+            ovColor = 'var(--profit)';
+          } else if (score <= -2) {
+            overall = 'VERKOPEN / SHORT (Futures)';
+            ovColor = 'var(--loss)';
+          }
+
+          card.innerHTML = '<div class="analysis-row-grid">' +
+              // Kolom 1: Munt & Koers
+              '<div>' +
+                '<div style="display: flex; align-items: center; gap: 8px;">' +
+                  '<div class="coin-badge">' + res.symbol + '</div>' +
+                  '<button class="btn-action chart-action" onclick="openChartTab(\'' + res.symbol + '\')">📊 Grafiek</button>' +
+                '</div>' +
+                '<div class="meta-info" style="margin-top: 3px;">Koers: <strong>$ ' + currentPrice.toFixed(4) + '</strong></div>' +
+              '</div>' +
+              // Kolom 2: Technische Indicatoren
+              '<div style="display: flex; flex-direction: column; gap: 4px;">' +
+                '<div style="font-size: 0.78rem; color: var(--text-muted);">RSI (14): <strong>' + rsi.toFixed(1) + '</strong> <span style="color: ' + rsiColor + ';">(' + rsiSignal + ')</span></div>' +
+                '<div style="font-size: 0.78rem; color: var(--text-muted);">Trend (EMA ' + shortPeriod + '/' + longPeriod + '): <strong style="color: ' + emaColor + ';">' + emaSignal + '</strong></div>' +
+              '</div>' +
+              // Kolom 3: Uitkomst / Signaal
+              '<div style="text-align: right;">' +
+                '<span class="badge-status" style="font-size: 0.75rem; padding: 6px 10px; background-color: rgba(34, 197, 94, 0.15); color: ' + ovColor + '; border: 1px solid ' + ovColor + ';">' + overall + '</span>' +
+              '</div>' +
+            '</div>';
+        }
+        container.appendChild(card);
+      });
+    });
+  }
+
+  // --- TRADINGVIEW GRAFIEK LOGICA ---
+  function openChartTab(symbol) {
+    if (isAnalysisActive) toggleAnalysisPage();
+    if (currentView === 'table') toggleView();
+    
+    isChartActive = true;
+    var cardsContainer = document.getElementById('cardsContainer');
+    var tableViewContainer = document.getElementById('tableViewContainer');
+    var filterSection = document.getElementById('filterSection');
+    var chartView = document.getElementById('chartPageView');
+    var chartNavBtn = document.getElementById('chartNavBtn');
+
+    if (cardsContainer) cardsContainer.style.display = 'none';
+    if (tableViewContainer) tableViewContainer.style.display = 'none';
+    if (filterSection) filterSection.style.display = 'none';
+    if (chartView) chartView.style.display = 'flex';
+    if (chartNavBtn) chartNavBtn.style.backgroundColor = '#0284c7';
+
+    populateChartCoinSelector(symbol);
+    renderTradingViewWidget(symbol);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function closeChartTab() {
+    isChartActive = false;
+    var chartView = document.getElementById('chartPageView');
+    var chartNavBtn = document.getElementById('chartNavBtn');
+    var cardsContainer = document.getElementById('cardsContainer');
+    var filterSection = document.getElementById('filterSection');
+
+    if (chartView) chartView.style.display = 'none';
+    if (chartNavBtn) chartNavBtn.style.backgroundColor = '#0ea5e9';
+    if (cardsContainer) cardsContainer.style.display = 'flex';
+    if (filterSection) filterSection.style.display = purchases.length > 0 ? 'flex' : 'none';
+  }
+
+  // Nieuwe functie: sluit grafiek en activeert direct de analyse-pagina
+  function closeChartTabToAnalysis() {
+    closeChartTab();
+    toggleAnalysisPage();
+  }
+
+  function populateChartCoinSelector(activeSymbol) {
+    var selector = document.getElementById('chartCoinSelector');
+    if (!selector) return;
+    selector.innerHTML = '';
+
+    var openCoins = [];
+    for (var i = 0; i < purchases.length; i++) {
+      if (!purchases[i].isSold) {
+        var sym = purchases[i].symbol.trim().toUpperCase();
+        if (openCoins.indexOf(sym) === -1) openCoins.push(sym);
+      }
+    }
+    if (openCoins.indexOf('BTC') === -1) openCoins.push('BTC');
+
+    openCoins.sort().forEach(function(sym) {
+      var opt = document.createElement('option');
+      opt.value = sym;
+      opt.textContent = sym + 'USDT';
+      if (sym === activeSymbol) opt.selected = true;
+      selector.appendChild(opt);
+    });
+  }
+
+  function switchChartCoin(sym) {
+    renderTradingViewWidget(sym);
+  }
+
+  function renderTradingViewWidget(symbol) {
+    var wrapper = document.getElementById('tradingviewWidgetWrapper');
+    if (!wrapper) return;
+    wrapper.innerHTML = '';
+
+    new TradingView.widget({
+      "width": "100%",
+      "height": "500",
+      "symbol": "BINANCE:" + symbol + "USDT",
+      "interval": "60",
+      "timezone": "Europe/Amsterdam",
+      "theme": "dark",
+      "style": "1",
+      "locale": "nl",
+      "toolbar_bg": "#1e293b",
+      "enable_publishing": false,
+      "hide_side_toolbar": false,
+      "allow_symbol_change": true,
+      "details": true,
+      "hotlist": true,
+      "calendar": false,
+      "studies": [
+        "RSI@tv-basicstudies",
+        "MASimple@tv-basicstudies"
+      ],
+      "container_id": "tradingviewWidgetWrapper"
+    });
+  }
+
   function jumpToCard(id) {
+    if (isAnalysisActive) toggleAnalysisPage();
+    if (isChartActive) closeChartTab();
     var target = null;
     for (var i = 0; i < purchases.length; i++) { if (purchases[i].id == id) { target = purchases[i]; break; } }
     if (target) {
@@ -706,6 +1024,8 @@
   }
 
   function setFormVisibility(showForm, formType) {
+    if (isAnalysisActive) toggleAnalysisPage();
+    if (isChartActive) closeChartTab();
     var summaryBlock = document.getElementById('portfolioSummaryBlock');
     var filterSection = document.getElementById('filterSection');
     var cardsContainer = document.getElementById('cardsContainer');
@@ -1037,7 +1357,6 @@
     var fileName = 'crypto_portfolio_backup.json';
     var jsonStr = getBackupJSON();
 
-    // Als het een mobiel apparaat is, sla de bestandskiezer direct over en gebruik het veilige deelmenu/download
     if (!isMobileDevice && window.showSaveFilePicker) {
       window.showSaveFilePicker({ suggestedName: fileName, types: [{ description: 'JSON Bestand', accept: { 'application/json': ['.json'] } }] })
       .then(function(handle) { saveActiveFileHandle(handle); return handle.createWritable().then(function(w) { return w.write(jsonStr).then(function() { return w.close(); }); }); })
@@ -1045,15 +1364,11 @@
       .catch(function(err) { if (err.name !== 'AbortError') fallbackDownloadOrShare(jsonStr, fileName); });
       return;
     }
-    
-    // Voor telefoons, tablets of browsers zonder bestandskiezer
     fallbackDownloadOrShare(jsonStr, fileName);
   }
 
   function fallbackDownloadOrShare(jsonStr, fileName) {
     var blob = new Blob([jsonStr], { type: 'application/json' });
-    
-    // Probeer op mobiel eerst het deelmenu (zodat je direct kunt kiezen voor Google Drive of opslaan in bestanden)
     if (navigator.canShare && navigator.share) {
       var file = new File([blob], fileName, { type: 'application/json' });
       if (navigator.canShare({ files: [file] })) {
@@ -1067,7 +1382,6 @@
         return;
       }
     }
-    
     regularDownload(blob, fileName);
   }
 
@@ -1181,31 +1495,7 @@
     }, 1000);
   }
 
-  // --- ANALYSE & INDICATOREN ---
-  function openAnalysisModal(symbol) {
-    document.getElementById('analysisModal').style.display = 'flex';
-    document.getElementById('analysisTitle').textContent = 'Analyse: ' + symbol;
-    document.getElementById('analysisContent').innerHTML = '<div style="text-align:center; padding: 20px;">Gegevens ophalen van Binance...</div>';
-
-    fetch('https://api.binance.com/api/v3/klines?symbol=' + symbol + 'USDT&interval=1d&limit=100')
-      .then(res => {
-        if (!res.ok) throw new Error('Geen koersdata');
-        return res.json();
-      })
-      .then(data => {
-        let closes = data.map(candle => parseFloat(candle[4]));
-        calculateAndDisplayIndicators(symbol, closes);
-      })
-      .catch(err => {
-        document.getElementById('analysisContent').innerHTML = 
-          '<div style="color: var(--loss); padding: 10px;">Fout bij ophalen koershistorie voor ' + symbol + '.<br><br><span style="color:var(--text-muted); font-size: 0.8rem;">Let op: Deze functionaliteit werkt alleen voor munten met een direct USDT-handelspaar op Binance.</span></div>';
-      });
-  }
-
-  function closeAnalysisModal() {
-    document.getElementById('analysisModal').style.display = 'none';
-  }
-
+  // --- TECHNISCHE ANALYSE HULPFUNCTIES ---
   function calcRSI(closes, period) {
     if (closes.length <= period) return 50;
     let avgGain = 0, avgLoss = 0;
@@ -1234,61 +1524,6 @@
       ema = (closes[i] * k) + (ema * (1 - k));
     }
     return ema;
-  }
-
-  function calculateAndDisplayIndicators(symbol, closes) {
-    if (closes.length < 50) {
-      document.getElementById('analysisContent').innerHTML = 'Onvoldoende historische data op Binance.';
-      return;
-    }
-    
-    let currentPrice = closes[closes.length - 1];
-    let rsi = calcRSI(closes, 14);
-    let ema20 = calcEMA(closes, 20);
-    let ema50 = calcEMA(closes, 50);
-
-    let rsiSignal = 'Neutraal'; let rsiColor = '#94a3b8';
-    if (rsi < 30) { rsiSignal = 'Oversold (Kans!)'; rsiColor = 'var(--profit)'; }
-    else if (rsi > 70) { rsiSignal = 'Overbought (Let op!)'; rsiColor = 'var(--loss)'; }
-    
-    let emaSignal = 'Zijwaarts'; let emaColor = '#94a3b8';
-    if (ema20 > ema50 && currentPrice > ema20) { emaSignal = 'Bullish (Stijgende trend)'; emaColor = 'var(--profit)'; }
-    else if (ema20 < ema50 && currentPrice < ema20) { emaSignal = 'Bearish (Dalende trend)'; emaColor = 'var(--loss)'; }
-    else if (ema20 > ema50 && currentPrice < ema20) { emaSignal = 'Correctie in stijgende trend'; emaColor = '#f59e0b'; }
-
-    let score = 0;
-    if (rsi < 35) score++; else if (rsi > 65) score--;
-    if (ema20 > ema50) score++; else score--;
-    if (currentPrice > ema20) score++; else score--;
-
-    let overall = 'HOUDEN / NEUTRAAL'; let ovColor = '#f59e0b';
-    if (score >= 2) { overall = 'KOPEN'; ovColor = 'var(--profit)'; }
-    else if (score <= -2) { overall = 'VERKOPEN'; ovColor = 'var(--loss)'; }
-
-    let html = `
-      <div style="margin-bottom: 12px; font-size: 0.8rem; line-height: 1.4;">
-        Deze analyse is berekend op basis van de <strong>dagelijkse koers (1D)</strong> in USDT.
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
-        <div style="background: rgba(30,41,59,0.5); padding: 12px; border-radius: 8px; border: 1px solid var(--card-border);">
-          <div style="font-size: 0.75rem; color: var(--text-muted);">Actuele Koers (USDT)</div>
-          <div style="font-size: 1.2rem; font-weight: bold; color: var(--text-main);">$ ${currentPrice.toFixed(4)}</div>
-        </div>
-        <div style="background: rgba(30,41,59,0.5); padding: 12px; border-radius: 8px; border: 1px solid var(--card-border);">
-          <div style="font-size: 0.75rem; color: var(--text-muted);">RSI (14 Dagen) - ${rsi.toFixed(1)}</div>
-          <div style="font-size: 1rem; font-weight: bold; color: ${rsiColor}; margin-top:2px;">${rsiSignal}</div>
-        </div>
-        <div style="background: rgba(30,41,59,0.5); padding: 12px; border-radius: 8px; border: 1px solid var(--card-border);">
-          <div style="font-size: 0.75rem; color: var(--text-muted);">Trend (EMA 20 & 50)</div>
-          <div style="font-size: 1rem; font-weight: bold; color: ${emaColor}; margin-top:2px;">${emaSignal}</div>
-        </div>
-        <div style="margin-top: 10px; text-align: center; padding: 16px; background: rgba(15,23,42,0.8); border: 2px solid ${ovColor}; border-radius: 8px;">
-          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Signaal</div>
-          <div style="font-size: 1.4rem; font-weight: 800; color: ${ovColor}; margin-top: 4px;">${overall}</div>
-        </div>
-      </div>
-    `;
-    document.getElementById('analysisContent').innerHTML = html;
   }
 
   // --- Kaarten & Filters ---
@@ -1491,7 +1726,6 @@
       card.className = 'crypto-card ' + (p.isSold ? 'is-sold' : '') + (isHighlighted ? ' highlight-card' : '');
 
       var statusBadge = ''; var metricsHTML = ''; var actionButtons = ''; var detailsHTML = '';
-      var analyseBtnHtml = '<button class="btn-action analyse-action" onclick="openAnalysisModal(\'' + p.symbol + '\')">Analyse</button>';
 
       if (p.isSold) {
         statusBadge = '<span class="badge-status sold">Verkocht: ' + formatDateNL(p.sellDate) + '</span>';
@@ -1507,8 +1741,7 @@
           '<div class="metric-col"><span>W/V</span><strong class="' + color + '">' + sign + formatEUR(diff) + ' (' + sign + perc.toFixed(1) + '%)</strong></div>' +
         '</div>';
 
-        actionButtons = analyseBtnHtml +
-                        '<button class="btn-action" onclick="editPurchase(' + p.id + ')">Bewerken</button>' +
+        actionButtons = '<button class="btn-action" onclick="editPurchase(' + p.id + ')">Bewerken</button>' +
                         '<button class="btn-action" onclick="reopenPosition(' + p.id + ')">Heropenen</button>' +
                         '<button class="btn-action delete" onclick="deletePurchase(' + p.id + ')">Verwijderen</button>';
       } else {
@@ -1539,7 +1772,7 @@
           '</div>';
         }
 
-        actionButtons = analyseBtnHtml +
+        actionButtons = '<button class="btn-action chart-action" onclick="openChartTab(\'' + p.symbol + '\')">📊 Grafiek</button>' +
                         '<button class="btn-action sold-action" onclick="openSellDialog(' + p.id + ')">Verkocht</button>' +
                         '<button class="btn-action" onclick="editPurchase(' + p.id + ')">Bewerken</button>' +
                         '<button class="btn-action delete" onclick="deletePurchase(' + p.id + ')">Verwijderen</button>';

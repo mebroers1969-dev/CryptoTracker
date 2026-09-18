@@ -300,9 +300,9 @@
     .date-sold { color: var(--loss) !important; font-weight: 600; }
     .date-part { color: var(--part-sold) !important; font-weight: 600; }
 
-    /* Analyse Pagina Container & 3-Koloms Grid */
+    /* Analyse Pagina Container & 2-Koloms Layout met compacte rijen */
     #analysisPageView { display: none; flex-direction: column; gap: 12px; width: 100%; }
-    .analysis-row-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; align-items: center; width: 100%; }
+    .analysis-row-flex { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; width: 100%; }
 
     /* --- BEGIN TRADINGVIEW GRAFIEK STYLING --- */
     #chartPageView { display: none; flex-direction: column; gap: 12px; width: 100%; }
@@ -310,10 +310,6 @@
     /* --- EINDE TRADINGVIEW GRAFIEK STYLING --- */
 
     #fallbackFileInput { display: none; }
-
-    @media (max-width: 700px) {
-      .analysis-row-grid { grid-template-columns: 1fr; gap: 8px; }
-    }
 
     @media (max-width: 600px) {
       body { padding: 8px; }
@@ -504,7 +500,7 @@
     </div>
   </div>
 
-  <!-- MARKTANALYSE PAGINA -->
+  <!-- MARKTANALYSE PAGINA (COMPACTE 2-KOLOMS LAYOUT MET LABEL RECHTSBOVEN) -->
   <div id="analysisPageView">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
       <div>
@@ -526,7 +522,7 @@
       <button class="filter-btn" onclick="setAnalysisInterval('15m', this)">15 min</button>
     </div>
 
-    <div id="analysisListContainer" style="display: flex; flex-direction: column; gap: 10px;">
+    <div id="analysisListContainer" style="display: flex; flex-direction: column; gap: 8px;">
       <!-- Wordt dynamisch gevuld -->
     </div>
   </div>
@@ -540,7 +536,6 @@
           <!-- Dynamisch gevuld -->
         </select>
       </div>
-      <!-- Aangepast zodat hij terugkeert naar de analyse-pagina in plaats van de kaarten -->
       <button class="btn-secondary" onclick="closeChartTabToAnalysis()">← Terug naar Analyse</button>
     </div>
     <div class="tradingview-container" id="tradingviewWidgetWrapper">
@@ -550,7 +545,7 @@
   <!-- --- EINDE TRADINGVIEW GRAFIEK TABBLAD --- -->
 
   <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 1.5.1</span>
+    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 1.5.2</span>
   </div>
 </div>
 
@@ -804,9 +799,10 @@
       results.forEach(function(res) {
         var card = document.createElement('div');
         card.className = 'crypto-card';
+        card.style.padding = '10px 14px'; // Extra compacte padding
 
         if (res.error || res.closes.length < 50) {
-          card.innerHTML = '<div class="card-header"><div class="coin-group"><div class="coin-badge">' + res.symbol + '</div></div>' +
+          card.innerHTML = '<div class="card-header" style="margin-bottom:0;"><div class="coin-group"><div class="coin-badge">' + res.symbol + '</div></div>' +
                            '<div class="meta-info" style="color: var(--loss);">Geen USDT-paar of onvoldoende data</div></div>';
         } else {
           var closes = res.closes;
@@ -842,23 +838,21 @@
             ovColor = 'var(--loss)';
           }
 
-          card.innerHTML = '<div class="analysis-row-grid">' +
-              // Kolom 1: Munt & Koers
-              '<div>' +
-                '<div style="display: flex; align-items: center; gap: 8px;">' +
+          // Super compacte flex-layout: Links de info, Rechtsboven het label
+          card.innerHTML = '<div class="analysis-row-flex">' +
+              // Linkerkant: Munt, Koers & Indicatoren onder elkaar
+              '<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">' +
+                '<div style="display: flex; align-items: center; gap: 6px;">' +
                   '<div class="coin-badge">' + res.symbol + '</div>' +
-                  '<button class="btn-action chart-action" onclick="openChartTab(\'' + res.symbol + '\')">📊 Grafiek</button>' +
+                  '<button class="btn-action chart-action" style="padding: 2px 6px; font-size: 0.7rem;" onclick="openChartTab(\'' + res.symbol + '\')">📊 Grafiek</button>' +
                 '</div>' +
-                '<div class="meta-info" style="margin-top: 3px;">Koers: <strong>$ ' + currentPrice.toFixed(4) + '</strong></div>' +
+                '<div class="meta-info">Koers: <strong>$ ' + currentPrice.toFixed(4) + '</strong></div>' +
+                '<div style="font-size: 0.75rem; color: var(--text-muted);">RSI (14): <strong>' + rsi.toFixed(1) + '</strong> <span style="color: ' + rsiColor + ';">(' + rsiSignal + ')</span></div>' +
+                '<div style="font-size: 0.75rem; color: var(--text-muted);">Trend (EMA ' + shortPeriod + '/' + longPeriod + '): <strong style="color: ' + emaColor + ';">' + emaSignal + '</strong></div>' +
               '</div>' +
-              // Kolom 2: Technische Indicatoren
-              '<div style="display: flex; flex-direction: column; gap: 4px;">' +
-                '<div style="font-size: 0.78rem; color: var(--text-muted);">RSI (14): <strong>' + rsi.toFixed(1) + '</strong> <span style="color: ' + rsiColor + ';">(' + rsiSignal + ')</span></div>' +
-                '<div style="font-size: 0.78rem; color: var(--text-muted);">Trend (EMA ' + shortPeriod + '/' + longPeriod + '): <strong style="color: ' + emaColor + ';">' + emaSignal + '</strong></div>' +
-              '</div>' +
-              // Kolom 3: Uitkomst / Signaal
-              '<div style="text-align: right;">' +
-                '<span class="badge-status" style="font-size: 0.75rem; padding: 6px 10px; background-color: rgba(34, 197, 94, 0.15); color: ' + ovColor + '; border: 1px solid ' + ovColor + ';">' + overall + '</span>' +
+              // Rechterkant: Uitkomst / Signaal netjes rechtsboven uitgelijnd
+              '<div>' +
+                '<span class="badge-status" style="font-size: 0.7rem; padding: 5px 9px; background-color: rgba(34, 197, 94, 0.15); color: ' + ovColor + '; border: 1px solid ' + ovColor + ';">' + overall + '</span>' +
               '</div>' +
             '</div>';
         }
@@ -903,7 +897,6 @@
     if (filterSection) filterSection.style.display = purchases.length > 0 ? 'flex' : 'none';
   }
 
-  // Nieuwe functie: sluit grafiek en activeert direct de analyse-pagina
   function closeChartTabToAnalysis() {
     closeChartTab();
     toggleAnalysisPage();

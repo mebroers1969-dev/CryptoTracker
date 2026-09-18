@@ -444,6 +444,7 @@
       justify-content: flex-end;
       gap: 6px;
       margin-top: 10px;
+      flex-wrap: wrap;
     }
 
     .btn-action {
@@ -474,6 +475,16 @@
       color: var(--loss);
       border-color: var(--loss);
       background-color: transparent;
+    }
+
+    .btn-action.analyse-action {
+      color: #c084fc;
+      border-color: rgba(192, 132, 252, 0.4);
+    }
+
+    .btn-action.analyse-action:hover {
+      background-color: rgba(192, 132, 252, 0.15);
+      color: #e9d5ff;
     }
 
     .empty-state {
@@ -623,7 +634,7 @@
   <div class="summary-card" id="portfolioSummaryBlock">
     <div class="summary-header">
       <div class="summary-title-group">
-        <div class="summary-title">Portefeuille</div>
+        <div class="summary-title">Portefeuille (Jeannette)</div>
         <div class="filter-badge" id="filterIndicator">Alles</div>
       </div>
     </div>
@@ -773,6 +784,17 @@
     </div>
   </div>
 
+  <!-- Analyse Modal -->
+  <div id="analysisModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); z-index:9999; justify-content:center; align-items:center; padding:16px;">
+    <div class="form-card" style="display:flex; max-width: 450px; width: 100%; border-color: var(--accent);">
+      <div class="form-title" id="analysisTitle" style="color: #c084fc;">Marktanalyse</div>
+      <div id="analysisContent" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 5px;">Laden...</div>
+      <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+        <button class="btn-secondary" onclick="closeAnalysisModal()">Sluiten</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Kaartenlijst Weergave -->
   <div id="cardsContainer" class="cards-list"></div>
 
@@ -816,7 +838,7 @@
 
   <!-- Versieblokje netjes binnen de container -->
   <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 1.1.0</span>
+    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 1.2.3</span>
   </div>
 </div>
 
@@ -842,6 +864,9 @@
   var currentView = 'cards';
   var activeFileHandle = null;
   var selectedHighlightId = null;
+
+  // Detecteer of het een mobiel apparaat/tablet is
+  var isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   function loadCloudData() {
     var statusMsg = document.getElementById('statusMessage');
@@ -1586,7 +1611,7 @@
     var fileName = 'crypto_portfolio_jeannette_backup.json';
     var jsonStr = getBackupJSON();
 
-    if (window.showSaveFilePicker) {
+    if (!isMobileDevice && window.showSaveFilePicker) {
       window.showSaveFilePicker({
         suggestedName: fileName,
         types: [{ description: 'JSON Bestand', accept: { 'application/json': ['.json'] } }]
@@ -1598,15 +1623,34 @@
       }).then(function() {
         alert('Backup succesvol opgeslagen en gekoppeld!');
       }).catch(function(err) {
-        if (err.name !== 'AbortError') fallbackDownload(jsonStr, fileName);
+        if (err.name !== 'AbortError') fallbackDownloadOrShare(jsonStr, fileName);
       });
       return;
     }
-    fallbackDownload(jsonStr, fileName);
+    fallbackDownloadOrShare(jsonStr, fileName);
   }
 
-  function fallbackDownload(jsonStr, fileName) {
+  function fallbackDownloadOrShare(jsonStr, fileName) {
     var blob = new Blob([jsonStr], { type: 'application/json' });
+    
+    if (navigator.canShare && navigator.share) {
+      var file = new File([blob], fileName, { type: 'application/json' });
+      if (navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: 'Crypto Portefeuille Backup Jeannette',
+          text: 'Hier is je backupbestand van de Crypto Tracker.'
+        }).catch(function(err) {
+          if (err.name !== 'AbortError') regularDownload(blob, fileName);
+        });
+        return;
+      }
+    }
+    
+    regularDownload(blob, fileName);
+  }
+
+  function regularDownload(blob, fileName) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
@@ -1618,8 +1662,19 @@
     alert('Backup gedownload als ' + fileName);
   }
 
+  function saveActiveFileHandle(handle) {
+    activeFileHandle = handle;
+    var info = document.getElementById('linkedFileInfo');
+    var btnQuick = document.getElementById('btnQuickBackup');
+    if (info && btnQuick) {
+      info.style.display = 'block';
+      info.innerHTML = '📁 Gekoppeld bestand: <strong>' + handle.name + '</strong>';
+      btnQuick.textContent = '💾 Direct Opslaan naar ' + handle.name;
+    }
+  }
+
   function importBackup() {
-    if (window.showOpenFilePicker) {
+    if (!isMobileDevice && window.showOpenFilePicker) {
       window.showOpenFilePicker({
         multiple: false,
         types: [{ description: 'JSON Bestand', accept: { 'application/json': ['.json'] } }]
@@ -1679,7 +1734,7 @@
     }
   }
 
-  // Live koersen ophalen (inclusief automatische USDT naar EUR conversie fallback)
+  // Live koersen ophalen
   function fetchLivePrices() {
     var openSymbols = [];
     for (var i = 0; i < purchases.length; i++) {
@@ -1778,6 +1833,116 @@
         }
       }
     }, 1000);
+  }
+
+  // --- ANALYSE & INDICATOREN ---
+  function openAnalysisModal(symbol) {
+    document.getElementById('analysisModal').style.display = 'flex';
+    document.getElementById('analysisTitle').textContent = 'Analyse: ' + symbol;
+    document.getElementById('analysisContent').innerHTML = '<div style="text-align:center; padding: 20px;">Gegevens ophalen van Binance...</div>';
+
+    fetch('https://api.binance.com/api/v3/klines?symbol=' + symbol + 'USDT&interval=1d&limit=100')
+      .then(res => {
+        if (!res.ok) throw new Error('Geen koersdata');
+        return res.json();
+      })
+      .then(data => {
+        let closes = data.map(candle => parseFloat(candle[4]));
+        calculateAndDisplayIndicators(symbol, closes);
+      })
+      .catch(err => {
+        document.getElementById('analysisContent').innerHTML = 
+          '<div style="color: var(--loss); padding: 10px;">Fout bij ophalen koershistorie voor ' + symbol + '.<br><br><span style="color:var(--text-muted); font-size: 0.8rem;">Let op: Deze functionaliteit werkt alleen voor munten met een direct USDT-handelspaar op Binance.</span></div>';
+      });
+  }
+
+  function closeAnalysisModal() {
+    document.getElementById('analysisModal').style.display = 'none';
+  }
+
+  function calcRSI(closes, period) {
+    if (closes.length <= period) return 50;
+    let avgGain = 0, avgLoss = 0;
+    for (let i = 1; i <= period; i++) {
+      let diff = closes[i] - closes[i-1];
+      if (diff >= 0) avgGain += diff; else avgLoss -= diff;
+    }
+    avgGain /= period; avgLoss /= period;
+    for (let i = period + 1; i < closes.length; i++) {
+      let diff = closes[i] - closes[i-1];
+      let gain = diff >= 0 ? diff : 0;
+      let loss = diff < 0 ? -diff : 0;
+      avgGain = ((avgGain * (period - 1)) + gain) / period;
+      avgLoss = ((avgLoss * (period - 1)) + loss) / period;
+    }
+    if (avgLoss === 0) return 100;
+    let rs = avgGain / avgLoss;
+    return 100 - (100 / (1 + rs));
+  }
+
+  function calcEMA(closes, period) {
+    if (closes.length < period) return closes[closes.length-1];
+    let k = 2 / (period + 1);
+    let ema = closes[0];
+    for (let i = 1; i < closes.length; i++) {
+      ema = (closes[i] * k) + (ema * (1 - k));
+    }
+    return ema;
+  }
+
+  function calculateAndDisplayIndicators(symbol, closes) {
+    if (closes.length < 50) {
+      document.getElementById('analysisContent').innerHTML = 'Onvoldoende historische data op Binance.';
+      return;
+    }
+    
+    let currentPrice = closes[closes.length - 1];
+    let rsi = calcRSI(closes, 14);
+    let ema20 = calcEMA(closes, 20);
+    let ema50 = calcEMA(closes, 50);
+
+    let rsiSignal = 'Neutraal'; let rsiColor = '#94a3b8';
+    if (rsi < 30) { rsiSignal = 'Oversold (Kans!)'; rsiColor = 'var(--profit)'; }
+    else if (rsi > 70) { rsiSignal = 'Overbought (Let op!)'; rsiColor = 'var(--loss)'; }
+    
+    let emaSignal = 'Zijwaarts'; let emaColor = '#94a3b8';
+    if (ema20 > ema50 && currentPrice > ema20) { emaSignal = 'Bullish (Stijgende trend)'; emaColor = 'var(--profit)'; }
+    else if (ema20 < ema50 && currentPrice < ema20) { emaSignal = 'Bearish (Dalende trend)'; emaColor = 'var(--loss)'; }
+    else if (ema20 > ema50 && currentPrice < ema20) { emaSignal = 'Correctie in stijgende trend'; emaColor = '#f59e0b'; }
+
+    let score = 0;
+    if (rsi < 35) score++; else if (rsi > 65) score--;
+    if (ema20 > ema50) score++; else score--;
+    if (currentPrice > ema20) score++; else score--;
+
+    let overall = 'HOUDEN / NEUTRAAL'; let ovColor = '#f59e0b';
+    if (score >= 2) { overall = 'KOPEN'; ovColor = 'var(--profit)'; }
+    else if (score <= -2) { overall = 'VERKOPEN'; ovColor = 'var(--loss)'; }
+
+    let html = `
+      <div style="margin-bottom: 12px; font-size: 0.8rem; line-height: 1.4;">
+        Deze analyse is berekend op basis van de <strong>dagelijkse koers (1D)</strong> in USDT.
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+        <div style="background: rgba(30,41,59,0.5); padding: 12px; border-radius: 8px; border: 1px solid var(--card-border);">
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Actuele Koers (USDT)</div>
+          <div style="font-size: 1.2rem; font-weight: bold; color: var(--text-main);">$ ${currentPrice.toFixed(4)}</div>
+        </div>
+        <div style="background: rgba(30,41,59,0.5); padding: 12px; border-radius: 8px; border: 1px solid var(--card-border);">
+          <div style="font-size: 0.75rem; color: var(--text-muted);">RSI (14 Dagen) - ${rsi.toFixed(1)}</div>
+          <div style="font-size: 1rem; font-weight: bold; color: ${rsiColor}; margin-top:2px;">${rsiSignal}</div>
+        </div>
+        <div style="background: rgba(30,41,59,0.5); padding: 12px; border-radius: 8px; border: 1px solid var(--card-border);">
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Trend (EMA 20 & 50)</div>
+          <div style="font-size: 1rem; font-weight: bold; color: ${emaColor}; margin-top:2px;">${emaSignal}</div>
+        </div>
+        <div style="margin-top: 10px; text-align: center; padding: 16px; background: rgba(15,23,42,0.8); border: 2px solid ${ovColor}; border-radius: 8px;">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Signaal</div>
+          <div style="font-size: 1.4rem; font-weight: 800; color: ${ovColor}; margin-top: 4px;">${overall}</div>
+        </div>
+      </div>
+    `;
+    document.getElementById('analysisContent').innerHTML = html;
   }
 
   // Filterfuncties Kaartenweergave
@@ -2113,6 +2278,7 @@
       var metricsHTML = '';
       var actionButtons = '';
       var detailsHTML = '';
+      var analyseBtnHtml = '<button class="btn-action analyse-action" onclick="openAnalysisModal(\'' + p.symbol + '\')">Analyse</button>';
 
       if (p.isSold) {
         statusBadge = '<span class="badge-status sold">Verkocht: ' + formatDateNL(p.sellDate) + '</span>';
@@ -2131,7 +2297,8 @@
           '<div class="metric-col"><span>W/V</span><strong class="' + color + '">' + sign + formatEUR(diff) + ' (' + sign + perc.toFixed(1) + '%)</strong></div>' +
         '</div>';
 
-        actionButtons = '<button class="btn-action" onclick="editPurchase(' + p.id + ')">Bewerken</button>' +
+        actionButtons = analyseBtnHtml +
+                        '<button class="btn-action" onclick="editPurchase(' + p.id + ')">Bewerken</button>' +
                         '<button class="btn-action" onclick="reopenPosition(' + p.id + ')">Heropenen</button>' +
                         '<button class="btn-action delete" onclick="deletePurchase(' + p.id + ')">Verwijderen</button>';
       } else {
@@ -2166,7 +2333,8 @@
           '</div>';
         }
 
-        actionButtons = '<button class="btn-action sold-action" onclick="openSellDialog(' + p.id + ')">Verkocht</button>' +
+        actionButtons = analyseBtnHtml +
+                        '<button class="btn-action sold-action" onclick="openSellDialog(' + p.id + ')">Verkocht</button>' +
                         '<button class="btn-action" onclick="editPurchase(' + p.id + ')">Bewerken</button>' +
                         '<button class="btn-action delete" onclick="deletePurchase(' + p.id + ')">Verwijderen</button>';
       }
@@ -2305,13 +2473,13 @@
     startAutoRefreshTimer();
   });
   
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('sw.js').catch(function(err) {
-                console.log('ServiceWorker registratie mislukt: ', err);
-            });
-        });
-    }
+  if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+          navigator.serviceWorker.register('sw.js').catch(function(err) {
+              console.log('ServiceWorker registratie mislukt: ', err);
+          });
+      });
+  }
 </script>
 
 </body>

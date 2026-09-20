@@ -518,7 +518,6 @@
         <select id="tableCoinSelect" class="filter-select" onchange="handleTableCoinChange(this.value)">
           <option value="ALL">Alle Munten</option>
         </select>
-        <!-- NIEUW: Status filter dropdown voor de tabel -->
         <select id="tableStatusSelect" class="filter-select" onchange="handleTableStatusChange(this.value)">
           <option value="ALL">Alle Statussen</option>
           <option value="OPEN">Open</option>
@@ -721,7 +720,7 @@
         <h3 id="chartPageTitle" style="font-size: 1.05rem; font-weight: 700; color: #38bdf8;">Grafiek</h3>
         <select id="chartCoinSelector" class="filter-select" onchange="switchChartCoin(this.value)" style="padding: 4px 10px; font-size: 0.75rem;"></select>
       </div>
-      <button class="btn-secondary" onclick="returnFromChart()">← Terug</button>
+      <button class="btn-secondary" onclick="switchNavTab('menu')">← Terug naar Menu</button>
     </div>
     <div class="tradingview-container" id="tradingviewWidgetWrapper"></div>
   </div>
@@ -751,7 +750,7 @@
   </div>
 
   <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker Jeannette &bull; Versie 2.5.0 (Table Status Filter Added)</span>
+    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker Jeannette &bull; Versie 2.6.0 (Sell Dialog & Table Status Fixed)</span>
   </div>
 </div>
 
@@ -884,7 +883,7 @@
 
   var tblSelectedExchangeFilter = 'ALL';
   var tblSelectedCoinFilter = 'ALL';
-  var tblSelectedStatusFilter = 'ALL'; // Nieuwe variabele voor statusfilter tabel
+  var tblSelectedStatusFilter = 'ALL';
 
   var REFRESH_INTERVAL_SECONDS = 30;
   var secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS;
@@ -1681,6 +1680,80 @@
       var el = document.getElementById('card_' + id);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 150);
+  }
+
+  // --- VERKOOP DIALOOG FUNCTIES ---
+  function openSellDialog(id) {
+    var item = null;
+    for (var i = 0; i < purchases.length; i++) { if (purchases[i].id === id) { item = purchases[i]; break; } }
+    if (!item) return;
+
+    var portfolioView = document.getElementById('portfolioView');
+    var sellForm = document.getElementById('sellForm');
+    var filterSection = document.getElementById('filterSection');
+
+    if (portfolioView) portfolioView.style.display = 'none';
+    if (filterSection) filterSection.style.display = 'none';
+    if (sellForm) sellForm.style.display = 'flex';
+
+    var sellId = document.getElementById('sellId'); if (sellId) sellId.value = item.id;
+    var heading = document.getElementById('sellFormHeading'); if (heading) heading.textContent = item.symbol + ' Verkopen';
+    var sellAmount = document.getElementById('sellAmount');
+    if (sellAmount) { sellAmount.value = item.amount; sellAmount.max = item.amount; }
+    var sellPrice = document.getElementById('sellPrice'); if (sellPrice) sellPrice.value = livePrices[item.symbol] || item.price;
+    var sellDate = document.getElementById('sellDate'); if (sellDate) sellDate.value = new Date().toISOString().split('T')[0];
+    var displayPurchaseDate = document.getElementById('displayPurchaseDate');
+    if (displayPurchaseDate) displayPurchaseDate.value = formatDateNL(item.date);
+    var dt = document.getElementById('sellFormDetails');
+    if (dt) dt.innerHTML = 'Aangekocht: <strong>' + formatAantal(item.amount) + '</strong> stuks @ ' + formatKoers(item.price, 'EUR') + ' (op ' + formatDateNL(item.date) + ') via ' + item.exchange;
+    updateSellYieldPreview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function updateSellYieldPreview() {
+    var amt = parseFloat(document.getElementById('sellAmount').value) || 0;
+    var prc = parseFloat(document.getElementById('sellPrice').value) || 0;
+    var previewEl = document.getElementById('sellYieldPreview');
+    if (previewEl) previewEl.textContent = 'Verwachte opbrengst: ' + formatEUR(amt * prc);
+  }
+
+  function closeSellForm() {
+    var sellForm = document.getElementById('sellForm');
+    if (sellForm) sellForm.style.display = 'none';
+    switchNavTab('portfolio');
+  }
+
+  function confirmSale(event) {
+    event.preventDefault();
+    var sellId = document.getElementById('sellId').value;
+    var sellAmount = parseFloat(document.getElementById('sellAmount').value);
+    var sellPrice = parseFloat(document.getElementById('sellPrice').value);
+    var sellDate = document.getElementById('sellDate').value;
+    var item = null;
+    for (var i = 0; i < purchases.length; i++) { if (purchases[i].id == sellId) { item = purchases[i]; break; } }
+    if (!item) return;
+
+    if (isNaN(sellAmount) || sellAmount <= 0 || sellAmount > item.amount) {
+      alert('Voer een geldig aantal stuks in tussen 0 en ' + formatAantal(item.amount)); return;
+    }
+
+    if (!item.initialAmount) item.initialAmount = item.amount;
+    var currentInitial = item.initialAmount;
+    var originalDate = item.date;
+
+    if (sellAmount === item.amount) {
+      item.isSold = true; item.sellPrice = sellPrice; item.sellDate = sellDate;
+    } else {
+      var remaining = +(item.amount - sellAmount).toFixed(8);
+      var soldPart = {
+        id: Date.now(), symbol: item.symbol, exchange: item.exchange, amount: sellAmount, initialAmount: sellAmount,
+        price: item.price, date: originalDate, isSold: true, sellPrice: sellPrice, sellDate: sellDate, partiallySold: false
+      };
+      purchases.unshift(soldPart);
+      item.initialAmount = currentInitial; item.amount = remaining; item.date = originalDate; item.partiallySold = true;
+    }
+    selectedHighlightId = null;
+    saveToCloud(); closeSellForm(); renderCards(); renderTableFilters(); renderTable(); updateSummary(); updateStatusDisplay();
   }
 
   function renderTable() {

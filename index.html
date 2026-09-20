@@ -336,6 +336,19 @@
 
     .empty-state { text-align: center; padding: 30px 16px; color: var(--text-muted); border: 2px dashed var(--card-border); border-radius: 12px; font-size: 0.9rem; }
 
+    /* Tabelweergave Stijlen */
+    #tableViewContainer { display: none; flex-direction: column; gap: 12px; width: 100%; }
+    .table-card { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 14px; overflow-x: auto; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; min-width: 480px; }
+    .data-table th { background-color: #0f172a; color: var(--text-muted); padding: 10px 10px; font-weight: 600; border-bottom: 1px solid var(--card-border); white-space: nowrap; }
+    .data-table td { padding: 9px 10px; border-bottom: 1px solid #1e2d42; white-space: nowrap; color: #cbd5e1; }
+    .data-table tfoot td { background-color: #0c1424; border-top: 2px solid var(--card-border); border-bottom: none; font-weight: 700; padding: 10px 10px; }
+    .data-table tr.clickable-row { cursor: pointer; transition: background-color 0.15s ease; }
+    .data-table tr.clickable-row:hover td { background-color: #24324a; }
+    .date-open { color: var(--profit) !important; font-weight: 600; }
+    .date-sold { color: var(--loss) !important; font-weight: 600; }
+    .date-part { color: var(--part-sold) !important; font-weight: 600; }
+
     /* Views */
     #portfolioView { display: flex; flex-direction: column; gap: 14px; width: 100%; }
     #futuresView { display: none; flex-direction: column; gap: 14px; width: 100%; }
@@ -459,6 +472,39 @@
     </div>
 
     <div id="futuresCardsContainer" class="cards-list"></div>
+  </div>
+
+  <!-- Tabelweergave Spot -->
+  <div id="tableViewContainer">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+      <h3 style="font-size: 1.05rem; font-weight: 700;">Transactie Tabel</h3>
+      <button class="btn-secondary" onclick="switchNavTab('portfolio')">← Terug naar Portefeuille</button>
+    </div>
+    <div class="filter-section" id="tableFilterSection">
+      <div class="filter-bar" id="tableStatusFilters"></div>
+      <div class="filter-bar" style="flex-wrap: wrap; gap: 8px;">
+        <div id="tableExchangeFilters" style="display: flex; gap: 6px; overflow-x: auto;"></div>
+        <select id="tableCoinSelect" class="filter-select" onchange="handleTableCoinChange(this.value)">
+          <option value="ALL">Alle Munten</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Munt</th>
+            <th>Aantal</th>
+            <th>Aankoopbedrag</th>
+            <th>Gerealiseerd</th>
+            <th>Ongerealiseerd</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+        <tfoot id="tableFoot"></tfoot>
+      </table>
+    </div>
   </div>
 
   <!-- Invoer- en Bewerkformulier Spot -->
@@ -607,39 +653,6 @@
     </div>
   </form>
 
-  <!-- Tabelweergave Spot -->
-  <div id="tableViewContainer" style="display: none; flex-direction: column; gap: 12px; width: 100%;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-      <h3 style="font-size: 1.05rem; font-weight: 700;">Transactie Tabel</h3>
-      <button class="btn-secondary" onclick="switchNavTab('portfolio')">← Terug naar Portefeuille</button>
-    </div>
-    <div class="filter-section" id="tableFilterSection">
-      <div class="filter-bar" id="tableStatusFilters"></div>
-      <div class="filter-bar" style="flex-wrap: wrap; gap: 8px;">
-        <div id="tableExchangeFilters" style="display: flex; gap: 6px; overflow-x: auto;"></div>
-        <select id="tableCoinSelect" class="filter-select" onchange="handleTableCoinChange(this.value)">
-          <option value="ALL">Alle Munten</option>
-        </select>
-      </div>
-    </div>
-    <div class="table-card">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Datum</th>
-            <th>Munt</th>
-            <th>Aantal</th>
-            <th>Aankoopbedrag</th>
-            <th>Gerealiseerd</th>
-            <th>Ongerealiseerd</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-        <tfoot id="tableFoot"></tfoot>
-      </table>
-    </div>
-  </div>
-
   <!-- MARKTANALYSE PAGINA -->
   <div id="analysisPageView">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
@@ -700,7 +713,7 @@
   </div>
 
   <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.1.6 (Direct Laden & Ververs-knop)</span>
+    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.2.0 (Table Filter Fix)</span>
   </div>
 </div>
 
@@ -785,7 +798,7 @@
       renderTableFilters();
       renderTable();
       
-      // DIRECT koersen ophalen bij opstarten
+      // Direct ophalen bij opstarten
       fetchLivePrices();
       fetchBinanceFuturesPrices();
 
@@ -1033,12 +1046,14 @@
   function openFuturesAddForm() {
     var portfolioView = document.getElementById('portfolioView');
     var futuresView = document.getElementById('futuresView');
+    var tableViewContainer = document.getElementById('tableViewContainer');
     var futuresForm = document.getElementById('futuresForm');
     var portfolioSummary = document.getElementById('portfolioSummaryBlock');
     var futuresSummary = document.getElementById('futuresSummaryBlock');
 
     if (portfolioView) portfolioView.style.display = 'none';
     if (futuresView) futuresView.style.display = 'none';
+    if (tableViewContainer) tableViewContainer.style.display = 'none';
     if (portfolioSummary) portfolioSummary.style.display = 'none';
     if (futuresSummary) futuresSummary.style.display = 'none';
     if (futuresForm) futuresForm.style.display = 'flex';
@@ -1064,12 +1079,14 @@
 
     var portfolioView = document.getElementById('portfolioView');
     var futuresView = document.getElementById('futuresView');
+    var tableViewContainer = document.getElementById('tableViewContainer');
     var futuresForm = document.getElementById('futuresForm');
     var portfolioSummary = document.getElementById('portfolioSummaryBlock');
     var futuresSummary = document.getElementById('futuresSummaryBlock');
 
     if (portfolioView) portfolioView.style.display = 'none';
     if (futuresView) futuresView.style.display = 'none';
+    if (tableViewContainer) tableViewContainer.style.display = 'none';
     if (portfolioSummary) portfolioSummary.style.display = 'none';
     if (futuresSummary) futuresSummary.style.display = 'none';
     if (futuresForm) futuresForm.style.display = 'flex';
@@ -1618,6 +1635,22 @@
     });
   }
 
+  function jumpToCard(id) {
+    switchNavTab('portfolio');
+    var target = null;
+    for (var i = 0; i < purchases.length; i++) { if (purchases[i].id == id) { target = purchases[i]; break; } }
+    if (target) {
+      activeCoinFilter = target.symbol.trim().toUpperCase();
+      renderCoinDetailFilters();
+      renderCards();
+    }
+    selectedHighlightId = id;
+    setTimeout(function() {
+      var el = document.getElementById('card_' + id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }
+
   function renderTable() {
     var tbody = document.getElementById('tableBody'); var tfoot = document.getElementById('tableFoot');
     if (!tbody || !tfoot) return; tbody.innerHTML = ''; tfoot.innerHTML = '';
@@ -1690,10 +1723,7 @@
 
   function getTableFilteredPurchases() {
     return purchases.filter(function(p) {
-      var matchSt = false;
-      if (p.isSold && tblSelectedStatuses.SOLD) matchSt = true;
-      else if (!p.isSold && p.partiallySold && tblSelectedStatuses.PARTSOLD) matchSt = true;
-      else if (!p.isSold && !p.partiallySold && tblSelectedStatuses.OPEN) matchSt = true;
+      var matchSt = true;
       var matchEx = (tblSelectedExchangeFilter === 'ALL' || p.exchange.trim() === tblSelectedExchangeFilter);
       var matchCoin = (tblSelectedCoinFilter === 'ALL' || p.symbol.trim().toUpperCase() === tblSelectedCoinFilter);
       return matchSt && matchEx && matchCoin;
@@ -1701,8 +1731,8 @@
   }
 
   function renderTableFilters() {
-    renderTableStatusFilters();
-    var exBar = document.getElementById('tableExchangeFilters'); var coinSelect = document.getElementById('tableCoinSelect');
+    var exBar = document.getElementById('tableExchangeFilters'); 
+    var coinSelect = document.getElementById('tableCoinSelect');
     if (!exBar || !coinSelect) return;
     exBar.innerHTML = '';
     var exchanges = []; var coins = [];
@@ -1718,16 +1748,17 @@
       btn.className = 'filter-btn ' + (tblSelectedExchangeFilter === ex ? 'active' : '');
       btn.textContent = ex; btn.onclick = function() { setTableExchangeFilter(ex); }; exBar.appendChild(btn);
     });
+    
     coinSelect.innerHTML = '<option value="ALL">Alle Munten</option>';
     coins.sort().forEach(function(coin) {
       var opt = document.createElement('option');
-      opt.value = coin; opt.textContent = coin;
+      opt.value = coin; 
+      opt.textContent = coin;
       if (tblSelectedCoinFilter === coin) opt.selected = true;
       coinSelect.appendChild(opt);
     });
   }
 
-  function toggleTableStatusFilter(statusKey) { tblSelectedStatuses[statusKey] = !tblSelectedStatuses[statusKey]; renderTableStatusFilters(); renderTable(); }
   function setTableExchangeFilter(exchange) { tblSelectedExchangeFilter = exchange; renderTableFilters(); renderTable(); }
   function handleTableCoinChange(coin) { tblSelectedCoinFilter = coin; renderTable(); }
 
@@ -1956,7 +1987,10 @@
         fetchLivePrices();
         fetchBinanceFuturesPrices();
       } else {
-        updateStatusDisplay();
+        var statusMsg = document.getElementById('statusMessage');
+        if (statusMsg && purchases.length > 0) {
+          statusMsg.textContent = 'Bijgewerkt (' + secondsUntilNextRefresh + 's)';
+        }
       }
     }, 1000);
   }

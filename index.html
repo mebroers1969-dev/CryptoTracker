@@ -336,7 +336,7 @@
 
     .empty-state { text-align: center; padding: 30px 16px; color: var(--text-muted); border: 2px dashed var(--card-border); border-radius: 12px; font-size: 0.9rem; }
 
-    /* Tabelweergave Geoptimaliseerd voor Mobiel */
+    /* Tabelweergave Stijlen (Geoptimaliseerd voor mobiel) */
     #tableViewContainer { display: none; flex-direction: column; gap: 12px; width: 100%; }
     .table-card { 
       background-color: var(--card-bg); 
@@ -506,7 +506,7 @@
     <div id="futuresCardsContainer" class="cards-list"></div>
   </div>
 
-  <!-- Tabelweergave Spot (Geoptimaliseerd) -->
+  <!-- Tabelweergave Spot -->
   <div id="tableViewContainer">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
       <h3 style="font-size: 1.05rem; font-weight: 700;">Transactie Tabel</h3>
@@ -744,7 +744,7 @@
   </div>
 
   <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.2.9 (Mobile Table Optimized)</span>
+    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.4.5 (Delete & Fetch Fixed)</span>
   </div>
 </div>
 
@@ -2002,7 +2002,363 @@
     else statusMsg.textContent = 'Klaar (' + secondsUntilNextRefresh + 's)';
   }
 
-  // Opstartcyclus en Service Worker (30s auto-refresh)
+  // --- FORMULIER & ACTIES ---
+  function populateExchangeDropdown(selectedValue) {
+    var select = document.getElementById('exchangeSelect');
+    if (!select) return;
+    select.innerHTML = '';
+    var all = getAllExchanges();
+    for (var i = 0; i < all.length; i++) {
+      var opt = document.createElement('option');
+      opt.value = all[i]; opt.textContent = all[i];
+      if (selectedValue && all[i].toLowerCase() === selectedValue.toLowerCase()) opt.selected = true;
+      select.appendChild(opt);
+    }
+    var newOpt = document.createElement('option');
+    newOpt.value = '__NEW__'; newOpt.textContent = '+ Nieuwe exchange toevoegen...';
+    select.appendChild(newOpt);
+    handleExchangeSelectChange();
+  }
+
+  function handleExchangeSelectChange() {
+    var select = document.getElementById('exchangeSelect');
+    var customInput = document.getElementById('customExchangeInput');
+    if (!select || !customInput) return;
+    if (select.value === '__NEW__') { customInput.style.display = 'block'; customInput.required = true; customInput.focus(); } 
+    else { customInput.style.display = 'none'; customInput.required = false; customInput.value = ''; }
+  }
+
+  function openAddForm() {
+    var portfolioView = document.getElementById('portfolioView');
+    var purchaseForm = document.getElementById('purchaseForm');
+    var filterSection = document.getElementById('filterSection');
+    
+    if (portfolioView) portfolioView.style.display = 'none';
+    if (filterSection) filterSection.style.display = 'none';
+    if (purchaseForm) purchaseForm.style.display = 'flex';
+
+    var editId = document.getElementById('editId'); if (editId) editId.value = '';
+    var heading = document.getElementById('formHeading'); if (heading) heading.textContent = 'Nieuwe Spot Aankoop Invoeren';
+    var saveBtn = document.getElementById('saveBtn'); if (saveBtn) saveBtn.textContent = 'Opslaan';
+    var sym = document.getElementById('symbol'); if (sym) sym.value = '';
+    var amt = document.getElementById('amount'); if (amt) amt.value = '';
+    var initAmt = document.getElementById('initialAmount'); if (initAmt) initAmt.value = '';
+    var prc = document.getElementById('price'); if (prc) prc.value = '';
+    var st = document.getElementById('priceFetchStatus'); if (st) st.textContent = '';
+    var dt = document.getElementById('date'); if (dt) dt.value = new Date().toISOString().split('T')[0];
+    var soldFields = document.getElementById('soldEditFields'); if (soldFields) soldFields.style.display = 'none';
+    populateExchangeDropdown();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function editPurchase(id) {
+    var item = null;
+    for (var i = 0; i < purchases.length; i++) { if (purchases[i].id == id) { item = purchases[i]; break; } }
+    if (!item) return;
+
+    var portfolioView = document.getElementById('portfolioView');
+    var purchaseForm = document.getElementById('purchaseForm');
+    var filterSection = document.getElementById('filterSection');
+
+    if (portfolioView) portfolioView.style.display = 'none';
+    if (filterSection) filterSection.style.display = 'none';
+    if (purchaseForm) purchaseForm.style.display = 'flex';
+
+    var editId = document.getElementById('editId'); if (editId) editId.value = item.id;
+    var heading = document.getElementById('formHeading');
+    if (heading) heading.textContent = (item.isSold ? 'Verkochte Positie ' : 'Aankoop ') + item.symbol + ' Bewerken';
+    var saveBtn = document.getElementById('saveBtn'); if (saveBtn) saveBtn.textContent = 'Wijzigingen Opslaan';
+    var sym = document.getElementById('symbol'); if (sym) sym.value = item.symbol;
+    var amt = document.getElementById('amount'); if (amt) amt.value = item.amount;
+    var initAmt = document.getElementById('initialAmount'); if (initAmt) initAmt.value = item.initialAmount || item.amount;
+    var prc = document.getElementById('price'); if (prc) prc.value = item.price;
+    var st = document.getElementById('priceFetchStatus'); if (st) st.textContent = '';
+    var dt = document.getElementById('date'); if (dt) dt.value = item.date;
+    var soldFields = document.getElementById('soldEditFields');
+    var editSellPrice = document.getElementById('editSellPrice');
+    var editSellDate = document.getElementById('editSellDate');
+
+    if (item.isSold) {
+      if (soldFields) soldFields.style.display = 'block';
+      if (editSellPrice) { editSellPrice.value = item.sellPrice !== null ? item.sellPrice : ''; editSellPrice.required = true; }
+      if (editSellDate) { editSellDate.value = item.sellDate || new Date().toISOString().split('T')[0]; editSellDate.required = true; }
+    } else {
+      if (soldFields) soldFields.style.display = 'none';
+      if (editSellPrice) editSellPrice.required = false;
+      if (editSellDate) editSellDate.required = false;
+    }
+    populateExchangeDropdown(item.exchange);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function closeForm() {
+    var purchaseForm = document.getElementById('purchaseForm');
+    var sellForm = document.getElementById('sellForm');
+    if (purchaseForm) purchaseForm.style.display = 'none';
+    if (sellForm) sellForm.style.display = 'none';
+    switchNavTab('portfolio');
+  }
+
+  function deletePurchase(id) {
+    if (confirm('Weet je zeker dat je deze aankoopbox wilt verwijderen?')) {
+      purchases = purchases.filter(function(p) { return p.id !== id; });
+      if (selectedHighlightId === id) selectedHighlightId = null;
+      saveToCloud(); renderCards(); renderTableFilters(); renderTable(); updateSummary(); updateStatusDisplay();
+    }
+  }
+
+  function handleSymbolInput() {
+    clearTimeout(symbolInputTimeout);
+    symbolInputTimeout = setTimeout(function() { fetchPriceForForm(false); }, 500);
+  }
+
+  function fetchPriceForForm(force) {
+    var editId = document.getElementById('editId');
+    if (editId && editId.value && !force) return;
+    var symbolInput = document.getElementById('symbol');
+    var priceInput = document.getElementById('price');
+    var statusSpan = document.getElementById('priceFetchStatus');
+    if (!symbolInput || !priceInput || !statusSpan) return;
+
+    var sym = symbolInput.value.trim().toUpperCase();
+    if (sym.length < 2) { statusSpan.textContent = ''; return; }
+
+    statusSpan.style.color = 'var(--accent)';
+    statusSpan.textContent = 'Koers van ' + sym + ' ophalen...';
+
+    fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'EUR')
+      .then(function(res) { if (res.ok) return res.json(); throw new Error('Geen direct EUR paar'); })
+      .then(function(data) {
+        var p = parseFloat(data.price);
+        if (!isNaN(p) && p > 0) {
+          priceInput.value = p;
+          statusSpan.style.color = 'var(--profit)';
+          statusSpan.textContent = 'Koers ingevuld (EUR): ' + formatKoers(p, 'EUR');
+        }
+      })
+      .catch(function() {
+        statusSpan.textContent = 'Geen direct EUR-paar. USDT converteren...';
+        Promise.all([
+          fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'USDT').then(function(r) { return r.ok ? r.json() : null; }),
+          fetch('https://api.binance.com/api/v3/ticker/price?symbol=EURUSDT').then(function(r) { return r.ok ? r.json() : null; })
+        ])
+        .then(function(results) {
+          var coinUsdtData = results[0]; var eurUsdtData = results[1];
+          if (coinUsdtData && eurUsdtData) {
+            var priceInUsdt = parseFloat(coinUsdtData.price);
+            var eurUsdtRate = parseFloat(eurUsdtData.price);
+            if (!isNaN(priceInUsdt) && !isNaN(eurUsdtRate) && eurUsdtRate > 0) {
+              var priceInEur = priceInUsdt / eurUsdtRate;
+              priceInput.value = priceInEur;
+              statusSpan.style.color = 'var(--profit)';
+              statusSpan.textContent = 'Koers ingevuld (omgerekend via USDT): ' + formatKoers(priceInEur, 'EUR');
+              return;
+            }
+          }
+          throw new Error('Geen USDT paar');
+        })
+        .catch(function() {
+          statusSpan.style.color = 'var(--text-muted)';
+          statusSpan.textContent = 'Niet gevonden op Binance. Vul prijs handmatig in.';
+        });
+      });
+  }
+
+  function savePurchase(event) {
+    event.preventDefault();
+    var editId = document.getElementById('editId').value;
+    var symbol = document.getElementById('symbol').value.trim().toUpperCase();
+    var select = document.getElementById('exchangeSelect');
+    var exchange = select ? select.value : 'Overig';
+
+    if (exchange === '__NEW__') {
+      var customVal = document.getElementById('customExchangeInput').value.trim();
+      if (!customVal) return;
+      exchange = customVal;
+      if (!getAllExchanges().map(function(e) { return e.toLowerCase(); }).includes(exchange.toLowerCase())) {
+        customExchanges.push(exchange);
+      }
+    }
+
+    var amount = parseFloat(document.getElementById('amount').value);
+    var initAmtInput = parseFloat(document.getElementById('initialAmount').value);
+    var initialAmount = !isNaN(initAmtInput) && initAmtInput >= amount ? initAmtInput : amount;
+    var price = parseFloat(document.getElementById('price').value);
+    var date = document.getElementById('date').value;
+
+    if (editId) {
+      for (var i = 0; i < purchases.length; i++) {
+        if (purchases[i].id == editId) {
+          purchases[i].symbol = symbol; purchases[i].exchange = exchange;
+          purchases[i].amount = amount; purchases[i].initialAmount = initialAmount;
+          purchases[i].price = price; purchases[i].date = date;
+          purchases[i].notified = false;
+          if (!purchases[i].isSold) purchases[i].partiallySold = (initialAmount > amount);
+          if (purchases[i].isSold) {
+            var esp = parseFloat(document.getElementById('editSellPrice').value);
+            var esd = document.getElementById('editSellDate').value;
+            if (!isNaN(esp)) purchases[i].sellPrice = esp;
+            if (esd) purchases[i].sellDate = esd;
+          }
+          break;
+        }
+      }
+      selectedHighlightId = null;
+    } else {
+      purchases.unshift({
+        id: Date.now(), symbol: symbol, exchange: exchange, amount: amount, initialAmount: initialAmount,
+        price: price, date: date, notified: false, isSold: false, sellPrice: null, sellDate: null, partiallySold: (initialAmount > amount)
+      });
+      selectedHighlightId = null;
+    }
+    saveToCloud(); closeForm(); renderCards(); renderTableFilters(); renderTable(); updateSummary(); fetchLivePrices();
+  }
+
+  // --- BACKUP & HERSTEL BEHEER ---
+  function getBackupJSON() {
+    return JSON.stringify({ app: 'CryptoTracker', exportDate: new Date().toISOString(), purchases: purchases, futures: futures, customExchanges: customExchanges }, null, 2);
+  }
+
+  function openBackupChoiceCardModal() {
+    var menuView = document.getElementById('menuPageView');
+    var backupChoiceCard = document.getElementById('backupChoiceCard');
+    if (menuView) menuView.style.display = 'none';
+    updateBackupChoiceUI();
+    if (backupChoiceCard) backupChoiceCard.style.display = 'flex';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function closeBackupChoiceDialog() {
+    var backupChoiceCard = document.getElementById('backupChoiceCard');
+    if (backupChoiceCard) backupChoiceCard.style.display = 'none';
+    switchNavTab('menu');
+  }
+
+  function updateBackupChoiceUI() {
+    var info = document.getElementById('linkedFileInfo');
+    var btnQuick = document.getElementById('btnQuickBackup');
+    if (!info || !btnQuick) return;
+    if (activeFileHandle && activeFileHandle.name) {
+      info.style.display = 'block';
+      info.innerHTML = '📁 Gekoppeld bestand: <strong>' + activeFileHandle.name + '</strong>';
+      btnQuick.textContent = '💾 Direct Opslaan naar ' + activeFileHandle.name;
+    } else {
+      info.style.display = 'none';
+      btnQuick.textContent = '💾 Backup Maken (Locatie kiezen)';
+    }
+  }
+
+  function executeQuickBackup() {
+    if (activeFileHandle) { writeToHandle(activeFileHandle); closeBackupChoiceDialog(); } 
+    else { executeBackupChoice('exportNew'); }
+  }
+
+  function executeBackupChoice(choice) {
+    closeBackupChoiceDialog();
+    if (choice === 'exportNew') exportBackupNewLocation();
+    else if (choice === 'import') importBackup();
+  }
+
+  function writeToHandle(handle) {
+    var jsonStr = getBackupJSON();
+    handle.createWritable().then(function(w) { return w.write(jsonStr).then(function() { return w.close(); }); })
+    .then(function() { alert('Backup direct succesvol opgeslagen in ' + handle.name + '!'); })
+    .catch(function(err) { alert('Kon niet direct opslaan: ' + err.message + '. Kies een nieuwe locatie.'); exportBackupNewLocation(); });
+  }
+
+  function exportBackupNewLocation() {
+    if (purchases.length === 0 && futures.length === 0) { alert('Er zijn nog geen transacties om te backuppen.'); return; }
+    var fileName = 'crypto_portfolio_backup.json';
+    var jsonStr = getBackupJSON();
+
+    if (!isMobileDevice && window.showSaveFilePicker) {
+      window.showSaveFilePicker({ suggestedName: fileName, types: [{ description: 'JSON Bestand', accept: { 'application/json': ['.json'] } }] })
+      .then(function(handle) { saveActiveFileHandle(handle); return handle.createWritable().then(function(w) { return w.write(jsonStr).then(function() { return w.close(); }); }); })
+      .then(function() { alert('Backup succesvol opgeslagen en gekoppeld!'); })
+      .catch(function(err) { if (err.name !== 'AbortError') fallbackDownloadOrShare(jsonStr, fileName); });
+      return;
+    }
+    fallbackDownloadOrShare(jsonStr, fileName);
+  }
+
+  function fallbackDownloadOrShare(jsonStr, fileName) {
+    var blob = new Blob([jsonStr], { type: 'application/json' });
+    if (navigator.canShare && navigator.share) {
+      var file = new File([blob], fileName, { type: 'application/json' });
+      if (navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file], title: 'Crypto Portefeuille Backup', text: 'Hier is je backupbestand van de Crypto Tracker.'
+        }).catch(function(err) { if (err.name !== 'AbortError') regularDownload(blob, fileName); });
+        return;
+      }
+    }
+    regularDownload(blob, fileName);
+  }
+
+  function regularDownload(blob, fileName) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert('Backup gedownload als ' + fileName);
+  }
+
+  function saveActiveFileHandle(handle) {
+    activeFileHandle = handle;
+    var info = document.getElementById('linkedFileInfo');
+    var btnQuick = document.getElementById('btnQuickBackup');
+    if (info && btnQuick) {
+      info.style.display = 'block'; info.innerHTML = '📁 Gekoppeld bestand: <strong>' + handle.name + '</strong>';
+      btnQuick.textContent = '💾 Direct Opslaan naar ' + handle.name;
+    }
+  }
+
+  function importBackup() {
+    if (!isMobileDevice && window.showOpenFilePicker) {
+      window.showOpenFilePicker({ multiple: false, types: [{ description: 'JSON Bestand', accept: { 'application/json': ['.json'] } }] })
+      .then(function(handles) { var handle = handles[0]; saveActiveFileHandle(handle); return handle.getFile().then(function(f) { return f.text(); }); })
+      .then(function(text) { applyRestoredData(text); })
+      .catch(function(err) { if (err.name !== 'AbortError') { var input = document.getElementById('fallbackFileInput'); if (input) input.click(); } });
+      return;
+    }
+    var input = document.getElementById('fallbackFileInput'); if (input) input.click();
+  }
+
+  function loadFallbackRestore(event) {
+    var file = event.target.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) { applyRestoredData(e.target.result); event.target.value = ''; };
+    reader.readAsText(file);
+  }
+
+  function applyRestoredData(jsonString) {
+    try {
+      var data = JSON.parse(jsonString);
+      if (!data || (!Array.isArray(data.purchases) && !Array.isArray(data.futures))) { alert('Ongeldig backupbestand.'); return; }
+      if (!confirm('Wil je de opgeslagen gegevens herstellen?')) return;
+      purchases = data.purchases || [];
+      futures = data.futures || [];
+      if (Array.isArray(data.customExchanges)) customExchanges = data.customExchanges;
+      autoReconcilePartiallySold(); selectedHighlightId = null;
+      saveToCloud(); renderCards(); renderFuturesCards(); renderTableFilters(); renderTable(); fetchLivePrices(); fetchBinanceFuturesPrices();
+      alert('Gegevens succesvol hersteld!');
+    } catch(err) { alert('Fout bij herstellen: ' + err.message); }
+  }
+
+  function startAutoRefreshTimer() {
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdownTimer = setInterval(function() {
+      secondsUntilNextRefresh--;
+      if (secondsUntilNextRefresh <= 0) {
+        secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS;
+        fetchLivePrices();
+        fetchBinanceFuturesPrices();
+      } else {
+        updateStatusDisplay();
+      }
+    }, 1000);
+  }
+
   window.addEventListener('DOMContentLoaded', function() {
     var dt = document.getElementById('date'); if (dt) dt.value = new Date().toISOString().split('T')[0];
     var fdt = document.getElementById('futDate'); if (fdt) fdt.value = new Date().toISOString().split('T')[0];

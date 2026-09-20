@@ -336,13 +336,45 @@
 
     .empty-state { text-align: center; padding: 30px 16px; color: var(--text-muted); border: 2px dashed var(--card-border); border-radius: 12px; font-size: 0.9rem; }
 
-    /* Tabelweergave Stijlen */
+    /* Tabelweergave Geoptimaliseerd voor Mobiel */
     #tableViewContainer { display: none; flex-direction: column; gap: 12px; width: 100%; }
-    .table-card { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 14px; overflow-x: auto; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); }
-    .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; min-width: 480px; }
-    .data-table th { background-color: #0f172a; color: var(--text-muted); padding: 10px 10px; font-weight: 600; border-bottom: 1px solid var(--card-border); white-space: nowrap; }
-    .data-table td { padding: 9px 10px; border-bottom: 1px solid #1e2d42; white-space: nowrap; color: #cbd5e1; }
-    .data-table tfoot td { background-color: #0c1424; border-top: 2px solid var(--card-border); border-bottom: none; font-weight: 700; padding: 10px 10px; }
+    .table-card { 
+      background-color: var(--card-bg); 
+      border: 1px solid var(--card-border); 
+      border-radius: 12px; 
+      padding: 10px; 
+      width: 100%;
+      overflow-x: auto; 
+      -webkit-overflow-scrolling: touch;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); 
+    }
+    .data-table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      font-size: 0.75rem; 
+      text-align: left; 
+    }
+    .data-table th { 
+      background-color: #0f172a; 
+      color: var(--text-muted); 
+      padding: 8px 6px; 
+      font-weight: 600; 
+      border-bottom: 1px solid var(--card-border); 
+      white-space: nowrap; 
+    }
+    .data-table td { 
+      padding: 8px 6px; 
+      border-bottom: 1px solid #1e2d42; 
+      white-space: nowrap; 
+      color: #cbd5e1; 
+    }
+    .data-table tfoot td { 
+      background-color: #0c1424; 
+      border-top: 2px solid var(--card-border); 
+      border-bottom: none; 
+      font-weight: 700; 
+      padding: 8px 6px; 
+    }
     .data-table tr.clickable-row { cursor: pointer; transition: background-color 0.15s ease; }
     .data-table tr.clickable-row:hover td { background-color: #24324a; }
     .date-open { color: var(--profit) !important; font-weight: 600; }
@@ -474,14 +506,13 @@
     <div id="futuresCardsContainer" class="cards-list"></div>
   </div>
 
-  <!-- Tabelweergave Spot -->
+  <!-- Tabelweergave Spot (Geoptimaliseerd) -->
   <div id="tableViewContainer">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
       <h3 style="font-size: 1.05rem; font-weight: 700;">Transactie Tabel</h3>
       <button class="btn-secondary" onclick="switchNavTab('portfolio')">← Terug naar Portefeuille</button>
     </div>
     <div class="filter-section" id="tableFilterSection">
-      <div class="filter-bar" id="tableStatusFilters"></div>
       <div class="filter-bar" style="flex-wrap: wrap; gap: 8px;">
         <div id="tableExchangeFilters" style="display: flex; gap: 6px; overflow-x: auto;"></div>
         <select id="tableCoinSelect" class="filter-select" onchange="handleTableCoinChange(this.value)">
@@ -496,9 +527,9 @@
             <th>Datum</th>
             <th>Munt</th>
             <th>Aantal</th>
-            <th>Aankoopbedrag</th>
-            <th>Gerealiseerd</th>
-            <th>Ongerealiseerd</th>
+            <th>Inleg</th>
+            <th>Gereal.</th>
+            <th>Ongereal.</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -683,7 +714,7 @@
         <h3 id="chartPageTitle" style="font-size: 1.05rem; font-weight: 700; color: #38bdf8;">Grafiek</h3>
         <select id="chartCoinSelector" class="filter-select" onchange="switchChartCoin(this.value)" style="padding: 4px 10px; font-size: 0.75rem;"></select>
       </div>
-      <button class="btn-secondary" onclick="returnFromChart()">← Terug</button>
+      <button class="btn-secondary" onclick="switchNavTab('menu')">← Terug naar Menu</button>
     </div>
     <div class="tradingview-container" id="tradingviewWidgetWrapper"></div>
   </div>
@@ -693,7 +724,7 @@
     <div class="menu-card">
       <div class="form-title">Opties & Beheer</div>
       <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
-        <button type="button" class="btn-secondary" style="text-align: left; padding: 12px;" onclick="switchNavTab('table')">📋 Transactie Tabel Bekijken</button>
+        <button type="button" class="btn-secondary" style="text-align: left; padding: 12px;" onclick="openChartTab('BTC', 'menu')">📊 TradingView Grafiek Openen</button>
         <button type="button" class="btn-secondary" style="text-align: left; padding: 12px;" onclick="manualRefresh();">🔄 Koersen Direct Verversen</button>
         <button type="button" class="btn-primary" style="text-align: left; padding: 12px;" onclick="openBackupChoiceCardModal()">💾 Backup / Herstel Beheren</button>
       </div>
@@ -713,7 +744,7 @@
   </div>
 
   <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.2.0 (Table Filter Fix)</span>
+    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.2.9 (Mobile Table Optimized)</span>
   </div>
 </div>
 
@@ -727,13 +758,13 @@
     <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
     Futures
   </button>
+  <button class="nav-item" id="navTableBtn" onclick="switchNavTab('table')">
+    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+    Tabel
+  </button>
   <button class="nav-item" id="navAnalysisBtn" onclick="switchNavTab('analysis')">
     <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
     Analyse
-  </button>
-  <button class="nav-item" id="navChartBtn" onclick="switchNavTab('chart')">
-    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
-    Grafiek
   </button>
   <button class="nav-item" id="navMenuBtn" onclick="switchNavTab('menu')">
     <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
@@ -798,7 +829,6 @@
       renderTableFilters();
       renderTable();
       
-      // Direct ophalen bij opstarten
       fetchLivePrices();
       fetchBinanceFuturesPrices();
 
@@ -952,7 +982,6 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // --- SPOT & ANALYSE KOERSEN (Binance Spot API) ---
   function fetchLivePrices() {
     var openSymbols = [];
     for (var i = 0; i < purchases.length; i++) {
@@ -986,7 +1015,6 @@
       });
   }
 
-  // --- FUTURES KOERSEN (Binance Futures API) ---
   function fetchBinanceFuturesPrices() {
     fetch('https://fapi.binance.com/fapi/v1/ticker/price')
       .then(function(res) { return res.json(); })
@@ -1042,7 +1070,6 @@
       });
   }
 
-  // --- FUTURES FORMULIER ---
   function openFuturesAddForm() {
     var portfolioView = document.getElementById('portfolioView');
     var futuresView = document.getElementById('futuresView');
@@ -1243,7 +1270,6 @@
     });
   }
 
-  // --- RENDER FUTURES CARDS & SUMMARY ---
   function renderFuturesCards() {
     var container = document.getElementById('futuresCardsContainer');
     if (!container) return;
@@ -1371,7 +1397,6 @@
     var lEl = document.getElementById('futuresAvgLeverage'); if (lEl) lEl.textContent = avgLev.toFixed(1) + 'x';
   }
 
-  // --- SPOT OVERZICHT & CARDS ---
   function updateSummary() {
     var tableViewContainer = document.getElementById('tableViewContainer');
     var visible = (tableViewContainer && tableViewContainer.style.display === 'flex') ? getTableFilteredPurchases() : getFilteredPurchases();
@@ -1723,10 +1748,9 @@
 
   function getTableFilteredPurchases() {
     return purchases.filter(function(p) {
-      var matchSt = true;
       var matchEx = (tblSelectedExchangeFilter === 'ALL' || p.exchange.trim() === tblSelectedExchangeFilter);
       var matchCoin = (tblSelectedCoinFilter === 'ALL' || p.symbol.trim().toUpperCase() === tblSelectedCoinFilter);
-      return matchSt && matchEx && matchCoin;
+      return matchEx && matchCoin;
     });
   }
 
@@ -1976,23 +2000,6 @@
     if (openCount === 0) { statusMsg.textContent = 'Alles verkocht'; return; }
     if (lastUpdatedTime) statusMsg.textContent = 'Bijgewerkt: ' + lastUpdatedTime + ' (' + secondsUntilNextRefresh + 's)';
     else statusMsg.textContent = 'Klaar (' + secondsUntilNextRefresh + 's)';
-  }
-
-  function startAutoRefreshTimer() {
-    if (countdownTimer) clearInterval(countdownTimer);
-    countdownTimer = setInterval(function() {
-      secondsUntilNextRefresh--;
-      if (secondsUntilNextRefresh <= 0) {
-        secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS;
-        fetchLivePrices();
-        fetchBinanceFuturesPrices();
-      } else {
-        var statusMsg = document.getElementById('statusMessage');
-        if (statusMsg && purchases.length > 0) {
-          statusMsg.textContent = 'Bijgewerkt (' + secondsUntilNextRefresh + 's)';
-        }
-      }
-    }, 1000);
   }
 
   // Opstartcyclus en Service Worker (30s auto-refresh)

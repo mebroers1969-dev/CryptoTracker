@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Crypto Portfolio Tracker</title>
+  <title>Crypto Portfolio & Futures Tracker</title>
   
   <link rel="manifest" href="manifest.json">
 
@@ -28,6 +28,7 @@
       --profit: #22c55e;
       --loss: #ef4444;
       --part-sold: #f59e0b;
+      --futures-accent: #8b5cf6;
     }
 
     * {
@@ -41,6 +42,7 @@
       background-color: var(--bg);
       color: var(--text-main);
       padding: 16px;
+      padding-bottom: 80px;
       display: flex;
       justify-content: center;
       overflow-x: hidden;
@@ -54,7 +56,53 @@
       gap: 14px;
     }
 
-    /* Sticky Portefeuille Overzicht */
+    /* Vaste App Navigatiebalk onderaan */
+    .app-bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 8px 0;
+      z-index: 1000;
+    }
+
+    .nav-item {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: color 0.2s ease;
+    }
+
+    .nav-item svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      color: var(--accent);
+    }
+    .nav-item.futures-nav.active {
+      color: var(--futures-accent);
+    }
+
+    /* Sticky Overzicht */
     .summary-card {
       position: sticky;
       top: 8px;
@@ -158,10 +206,8 @@
     .btn-secondary:hover { background-color: #475569; }
     .btn-backup { background-color: #1e293b; border: 1px solid var(--card-border); color: #94a3b8; }
     .btn-backup:hover { color: var(--text-main); background-color: #334155; }
-    .btn-analyse-nav { background-color: #7c3aed; color: white; }
-    .btn-analyse-nav:hover { background-color: #6d28d9; }
-    .btn-chart-nav { background-color: #0ea5e9; color: white; }
-    .btn-chart-nav:hover { background-color: #0284c7; }
+    .btn-futures { background-color: var(--futures-accent); color: white; }
+    .btn-futures:hover { background-color: #7c3aed; }
 
     #statusMessage {
       font-size: 0.72rem;
@@ -204,14 +250,13 @@
       background-color: #1e293b;
       color: var(--text-main);
       border: 1px solid var(--card-border);
-      padding: 5px 12px;
+      padding: 6px 12px;
       border-radius: 20px;
       font-size: 0.75rem;
       font-weight: 500;
       outline: none;
       cursor: pointer;
       width: auto;
-      max-width: 220px;
     }
     .filter-select:focus { border-color: var(--accent); }
 
@@ -253,6 +298,8 @@
     }
     .crypto-card.is-sold { border-color: #475569; background-color: #1a2333; }
     .crypto-card.highlight-card { border-color: var(--accent) !important; background-color: #1e3256 !important; box-shadow: 0 0 16px rgba(59, 130, 246, 0.45); }
+    .crypto-card.clickable-card { cursor: pointer; }
+    .crypto-card.clickable-card:hover { border-color: var(--accent); background-color: #24324a; }
 
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
     .coin-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -262,6 +309,8 @@
     .badge-status.open { background-color: rgba(34, 197, 94, 0.15); color: var(--profit); border: 1px solid rgba(34, 197, 94, 0.4); }
     .badge-status.sold { background-color: rgba(239, 68, 68, 0.15); color: var(--loss); border: 1px solid rgba(239, 68, 68, 0.4); }
     .badge-status.part-sold { background-color: rgba(245, 158, 11, 0.15); color: var(--part-sold); border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-status.futures-long { background-color: rgba(59, 130, 246, 0.15); color: #38bdf8; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .badge-status.futures-short { background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
 
     .meta-info { font-size: 0.75rem; color: var(--text-muted); }
     .purchase-details { font-size: 0.85rem; color: #cbd5e1; margin-bottom: 10px; line-height: 1.4; word-break: break-word; }
@@ -287,32 +336,21 @@
 
     .empty-state { text-align: center; padding: 30px 16px; color: var(--text-muted); border: 2px dashed var(--card-border); border-radius: 12px; font-size: 0.9rem; }
 
-    /* Tabelweergave */
-    #tableViewContainer { display: none; flex-direction: column; gap: 12px; width: 100%; }
-    .table-card { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 14px; overflow-x: auto; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); }
-    .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; min-width: 480px; }
-    .data-table th { background-color: #0f172a; color: var(--text-muted); padding: 10px 10px; font-weight: 600; border-bottom: 1px solid var(--card-border); white-space: nowrap; }
-    .data-table td { padding: 9px 10px; border-bottom: 1px solid #1e2d42; white-space: nowrap; color: #cbd5e1; }
-    .data-table tfoot td { background-color: #0c1424; border-top: 2px solid var(--card-border); border-bottom: none; font-weight: 700; padding: 10px 10px; }
-    .data-table tr.clickable-row { cursor: pointer; transition: background-color 0.15s ease; }
-    .data-table tr.clickable-row:hover td { background-color: #24324a; }
-    .date-open { color: var(--profit) !important; font-weight: 600; }
-    .date-sold { color: var(--loss) !important; font-weight: 600; }
-    .date-part { color: var(--part-sold) !important; font-weight: 600; }
-
-    /* Analyse Pagina Container & 2-Koloms Layout met compacte rijen */
+    /* Views */
+    #portfolioView { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+    #futuresView { display: none; flex-direction: column; gap: 14px; width: 100%; }
     #analysisPageView { display: none; flex-direction: column; gap: 12px; width: 100%; }
-    .analysis-row-flex { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; width: 100%; }
-
-    /* --- BEGIN TRADINGVIEW GRAFIEK STYLING --- */
     #chartPageView { display: none; flex-direction: column; gap: 12px; width: 100%; }
+    #menuPageView { display: none; flex-direction: column; gap: 12px; width: 100%; }
+    .menu-card { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    .analysis-row-flex { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; width: 100%; }
     .tradingview-container { width: 100%; height: 500px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
-    /* --- EINDE TRADINGVIEW GRAFIEK STYLING --- */
 
     #fallbackFileInput { display: none; }
 
     @media (max-width: 600px) {
-      body { padding: 8px; }
+      body { padding: 8px; padding-bottom: 80px; }
       .summary-card { padding: 12px; top: 4px; }
       .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
       .form-grid { grid-template-columns: 1fr; gap: 12px; }
@@ -330,11 +368,11 @@
 <div class="container">
   <input type="file" id="fallbackFileInput" accept=".json" onchange="loadFallbackRestore(event)">
 
-  <!-- Sticky Portefeuille Overzicht -->
+  <!-- Sticky Portefeuille Overzicht (Spot) -->
   <div class="summary-card" id="portfolioSummaryBlock">
     <div class="summary-header">
       <div class="summary-title-group">
-        <div class="summary-title">Mijn Portefeuille</div>
+        <div class="summary-title" id="summaryHeaderTitle">Mijn Spot Portefeuille</div>
         <div class="filter-badge" id="filterIndicator">Alles</div>
       </div>
     </div>
@@ -348,26 +386,83 @@
 
     <div class="summary-controls">
       <div class="summary-btn-group">
-        <button class="btn-primary" onclick="openAddForm()">+ Aankoop</button>
-        <button class="btn-secondary" id="viewToggleBtn" onclick="toggleView()">Tabel</button>
-        <button class="btn-analyse-nav" id="analyseNavBtn" onclick="toggleAnalysisPage()">Analyse</button>
-        <button class="btn-chart-nav" id="chartNavBtn" onclick="openChartTab('BTC')">Grafiek</button>
-        <button id="refreshBtn" class="btn-secondary" onclick="manualRefresh()">Verversen</button>
-        <button class="btn-backup" onclick="openBackupChoiceDialog()">Backup / Herstel</button>
+        <button class="btn-primary" onclick="openAddForm()">+ Spot Aankoop</button>
       </div>
       <span id="statusMessage">Klaar</span>
     </div>
   </div>
 
-  <!-- Filters voor Kaartenweergave -->
-  <div class="filter-section" id="filterSection">
-    <div class="filter-bar" id="statusFilters"></div>
-    <div class="filter-bar" id="exchangeFilters"></div>
+  <!-- Sticky Futures Overzicht (Zichtbaar op Futures tab) -->
+  <div class="summary-card" id="futuresSummaryBlock" style="display: none; border-color: var(--futures-accent);">
+    <div class="summary-header">
+      <div class="summary-title-group">
+        <div class="summary-title" style="color: #c084fc;">Binance Futures Overzicht</div>
+        <div class="filter-badge" id="futuresFilterIndicator">Actief</div>
+      </div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-item"><span>Totaal Startbedrag (Margin)</span><strong id="futuresTotalMargin">$0,00</strong></div>
+      <div class="summary-item"><span>Totale Positiewaarde</span><strong id="futuresTotalValue">$0,00</strong></div>
+      <div class="summary-item"><span>Resultaat Open</span><strong id="futuresTotalProfit">$0,00</strong></div>
+      <div class="summary-item"><span>Hefboom (Gem.)</span><strong id="futuresAvgLeverage">1x</strong></div>
+    </div>
+
+    <div class="summary-controls">
+      <div class="summary-btn-group">
+        <button class="btn-futures" onclick="openFuturesAddForm()">+ Future Positie</button>
+        <button class="btn-secondary" onclick="manualRefreshFutures()">🔄 Koersen Verversen</button>
+      </div>
+      <span id="futuresStatusMessage">Live Binance gekoppeld</span>
+    </div>
   </div>
 
-  <!-- Invoer- en Bewerkformulier -->
+  <!-- Spot Portefeuille Scherm -->
+  <div id="portfolioView">
+    <div class="filter-section" id="filterSection">
+      <div id="subScreenNav" style="display: none; justify-content: space-between; align-items: center; background: #1e293b; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 10px; margin-bottom: 6px;">
+        <button class="btn-secondary" onclick="returnToAggregatedHome()">← Terug naar Overzicht</button>
+        <div id="subScreenTitle" style="font-weight: 700; color: #38bdf8; font-size: 0.95rem;">Munt</div>
+        <button class="btn-secondary" onclick="showAllTransactions()">Alles</button>
+      </div>
+
+      <div id="coinDetailFilters" style="display: none; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <select id="coinStatusSelect" class="filter-select" onchange="setCoinStatusFilter(this.value)">
+          <option value="ALL">Alle Statussen</option>
+          <option value="OPEN">Open</option>
+          <option value="PARTSOLD">Deels verkocht</option>
+          <option value="SOLD">Verkocht</option>
+        </select>
+        <select id="coinExchangeSelect" class="filter-select" onchange="setCoinExchangeFilter(this.value)"></select>
+      </div>
+    </div>
+
+    <div id="cardsContainer" class="cards-list"></div>
+  </div>
+
+  <!-- Binance Futures Scherm -->
+  <div id="futuresView">
+    <div class="filter-section" id="futuresFilterSection">
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <select id="futuresStatusSelect" class="filter-select" onchange="renderFuturesCards()">
+          <option value="ALL">Alle Futures (Open & Gesloten)</option>
+          <option value="OPEN" selected>Alleen Open</option>
+          <option value="CLOSED">Alleen Gesloten</option>
+        </select>
+        <select id="futuresTypeSelect" class="filter-select" onchange="renderFuturesCards()">
+          <option value="ALL">Long & Short</option>
+          <option value="LONG">Alleen Long</option>
+          <option value="SHORT">Alleen Short</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="futuresCardsContainer" class="cards-list"></div>
+  </div>
+
+  <!-- Invoer- en Bewerkformulier Spot -->
   <form id="purchaseForm" class="form-card" onsubmit="savePurchase(event)">
-    <div class="form-title" id="formHeading">Nieuwe Aankoop Invoeren</div>
+    <div class="form-title" id="formHeading">Nieuwe Spot Aankoop Invoeren</div>
     <input type="hidden" id="editId" value="" />
     
     <div class="form-grid">
@@ -399,7 +494,6 @@
       </div>
     </div>
 
-    <!-- Extra velden voor verkochte posities -->
     <div id="soldEditFields" style="display:none; margin-top: 8px; border-top: 1px dashed var(--card-border); padding-top: 10px;">
       <div class="form-grid">
         <div class="input-group">
@@ -419,7 +513,67 @@
     </div>
   </form>
 
-  <!-- Verkoop Formulier -->
+  <!-- Invoerformulier Futures -->
+  <form id="futuresForm" class="form-card" onsubmit="saveFuture(event)">
+    <div class="form-title" id="futuresFormHeading">Futures Positie Invoeren (USD)</div>
+    <input type="hidden" id="editFutureId" value="" />
+    
+    <div class="form-grid">
+      <div class="input-group">
+        <label for="futSymbol">Munt (bijv. BTC, ETH, XRP)</label>
+        <input type="text" id="futSymbol" placeholder="BTC" oninput="handleFutSymbolInput()" required autocomplete="off" />
+        <span id="futPriceFetchStatus" class="helper-text"></span>
+      </div>
+      <div class="input-group">
+        <label for="futType">Type Positie</label>
+        <select id="futType" required>
+          <option value="LONG">LONG (Stijgend)</option>
+          <option value="SHORT">SHORT (Dalend)</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label for="futLeverage">Hefboom (Leverage)</label>
+        <input type="number" id="futLeverage" step="1" min="1" max="125" placeholder="10" required />
+      </div>
+      <div class="input-group">
+        <label for="futMargin">Startbedrag (Margin in USD)</label>
+        <input type="number" id="futMargin" step="any" placeholder="100.22" required />
+      </div>
+      <div class="input-group">
+        <label for="futAmount">Aantal contracten / munten</label>
+        <input type="number" id="futAmount" step="any" placeholder="0.0123" required />
+      </div>
+      <div class="input-group">
+        <label for="futEntryPrice">Instapprijs (Entry Price in USD)</label>
+        <input type="number" id="futEntryPrice" step="any" placeholder="81480" required />
+      </div>
+      <div class="input-group" style="grid-column: span 2;">
+        <label for="futDate">Datum opening</label>
+        <input type="date" id="futDate" required />
+      </div>
+    </div>
+
+    <!-- Sluiten van future velden -->
+    <div id="futCloseFields" style="display:none; margin-top: 8px; border-top: 1px dashed var(--card-border); padding-top: 10px;">
+      <div class="form-grid">
+        <div class="input-group">
+          <label for="editFutClosePrice">Sluitingsprijs (USD)</label>
+          <input type="number" id="editFutClosePrice" step="any" />
+        </div>
+        <div class="input-group">
+          <label for="editFutCloseDate">Sluitingsdatum</label>
+          <input type="date" id="editFutCloseDate" />
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
+      <button type="button" class="btn-secondary" onclick="closeFuturesForm()">Annuleren</button>
+      <button type="submit" class="btn-futures" id="saveFutBtn">Future Opslaan</button>
+    </div>
+  </form>
+
+  <!-- Verkoop Formulier Spot -->
   <form id="sellForm" class="form-card" onsubmit="confirmSale(event)">
     <div class="form-title" id="sellFormHeading">Positie Verkopen</div>
     <input type="hidden" id="sellId" value="" />
@@ -452,26 +606,11 @@
     </div>
   </form>
 
-  <!-- Backup & Herstel Keuze Menu -->
-  <div id="backupChoiceCard" class="form-card">
-    <div class="form-title">Backup & Herstel</div>
-    <p id="linkedFileInfo" style="font-size: 0.8rem; color: var(--accent); line-height: 1.4; display: none; background: rgba(59,130,246,0.1); padding: 8px; border-radius: 6px;"></p>
-    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
-      <button type="button" class="btn-primary" id="btnQuickBackup" onclick="executeQuickBackup()">💾 Backup Opslaan</button>
-      <button type="button" class="btn-secondary" onclick="executeBackupChoice('exportNew')">📁 Opslaan als nieuw bestand / andere locatie...</button>
-      <button type="button" class="btn-secondary" onclick="executeBackupChoice('import')">📥 Backup Herstellen (Inlezen)</button>
-      <button type="button" class="btn-backup" style="margin-top: 6px;" onclick="closeBackupChoiceDialog()">Annuleren</button>
-    </div>
-  </div>
-
-  <!-- Kaartenlijst Weergave -->
-  <div id="cardsContainer" class="cards-list"></div>
-
-  <!-- Tabelweergave Pagina -->
-  <div id="tableViewContainer">
+  <!-- Tabelweergave Spot -->
+  <div id="tableViewContainer" style="display: none; flex-direction: column; gap: 12px; width: 100%;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-      <h3 style="font-size: 1.05rem; font-weight: 700;">Transactie Overzicht</h3>
-      <button class="btn-secondary" onclick="toggleView()">← Terug naar Kaarten</button>
+      <h3 style="font-size: 1.05rem; font-weight: 700;">Transactie Tabel</h3>
+      <button class="btn-secondary" onclick="switchNavTab('portfolio')">← Terug naar Portefeuille</button>
     </div>
     <div class="filter-section" id="tableFilterSection">
       <div class="filter-bar" id="tableStatusFilters"></div>
@@ -500,7 +639,7 @@
     </div>
   </div>
 
-  <!-- MARKTANALYSE PAGINA (COMPACTE 2-KOLOMS LAYOUT MET LABEL RECHTSBOVEN) -->
+  <!-- MARKTANALYSE PAGINA -->
   <div id="analysisPageView">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
       <div>
@@ -509,11 +648,9 @@
       </div>
       <div style="display: flex; gap: 6px; align-items: center;">
         <button class="btn-secondary" onclick="loadBatchAnalysis()">Verversen</button>
-        <button class="btn-secondary" onclick="toggleAnalysisPage()">← Terug</button>
       </div>
     </div>
 
-    <!-- Tijdframe Kiezer -->
     <div class="filter-bar" id="analysisIntervalFilters" style="margin-bottom: 6px; gap: 6px;">
       <span style="font-size: 0.75rem; color: var(--text-muted); margin-right: 4px;">Tijdsduur:</span>
       <button class="filter-btn" onclick="setAnalysisInterval('1d', this)">Dag (1d)</button>
@@ -522,38 +659,78 @@
       <button class="filter-btn" onclick="setAnalysisInterval('15m', this)">15 min</button>
     </div>
 
-    <div id="analysisListContainer" style="display: flex; flex-direction: column; gap: 8px;">
-      <!-- Wordt dynamisch gevuld -->
-    </div>
+    <div id="analysisListContainer" style="display: flex; flex-direction: column; gap: 10px;"></div>
   </div>
 
-  <!-- --- BEGIN TRADINGVIEW GRAFIEK TABBLAD --- -->
+  <!-- TRADINGVIEW GRAFIEK TABBLAD -->
   <div id="chartPageView">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
       <div style="display: flex; align-items: center; gap: 8px;">
         <h3 id="chartPageTitle" style="font-size: 1.05rem; font-weight: 700; color: #38bdf8;">Grafiek</h3>
-        <select id="chartCoinSelector" class="filter-select" onchange="switchChartCoin(this.value)" style="padding: 4px 10px; font-size: 0.75rem;">
-          <!-- Dynamisch gevuld -->
-        </select>
+        <select id="chartCoinSelector" class="filter-select" onchange="switchChartCoin(this.value)" style="padding: 4px 10px; font-size: 0.75rem;"></select>
       </div>
-      <button class="btn-secondary" onclick="closeChartTabToAnalysis()">← Terug naar Analyse</button>
+      <button class="btn-secondary" onclick="returnFromChart()">← Terug</button>
     </div>
-    <div class="tradingview-container" id="tradingviewWidgetWrapper">
-      <!-- TradingView Widget Widget Inhoud -->
+    <div class="tradingview-container" id="tradingviewWidgetWrapper"></div>
+  </div>
+
+  <!-- EXTRA MENU PAGINA -->
+  <div id="menuPageView">
+    <div class="menu-card">
+      <div class="form-title">Opties & Beheer</div>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+        <button type="button" class="btn-secondary" style="text-align: left; padding: 12px;" onclick="switchNavTab('table')">📋 Transactie Tabel Bekijken</button>
+        <button type="button" class="btn-secondary" style="text-align: left; padding: 12px;" onclick="manualRefresh();">🔄 Koersen Direct Verversen</button>
+        <button type="button" class="btn-primary" style="text-align: left; padding: 12px;" onclick="openBackupChoiceCardModal()">💾 Backup / Herstel Beheren</button>
+      </div>
     </div>
   </div>
-  <!-- --- EINDE TRADINGVIEW GRAFIEK TABBLAD --- -->
+
+  <!-- Backup & Herstel Keuze Menu -->
+  <div id="backupChoiceCard" class="form-card">
+    <div class="form-title">Backup & Herstel</div>
+    <p id="linkedFileInfo" style="font-size: 0.8rem; color: var(--accent); line-height: 1.4; display: none; background: rgba(59,130,246,0.1); padding: 8px; border-radius: 6px;"></p>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+      <button type="button" class="btn-primary" id="btnQuickBackup" onclick="executeQuickBackup()">💾 Backup Opslaan</button>
+      <button type="button" class="btn-secondary" onclick="executeBackupChoice('exportNew')">📁 Opslaan als nieuw bestand / andere locatie...</button>
+      <button type="button" class="btn-secondary" onclick="executeBackupChoice('import')">📥 Backup Herstellen (Inlezen)</button>
+      <button type="button" class="btn-backup" style="margin-top: 6px;" onclick="closeBackupChoiceDialog()">Annuleren</button>
+    </div>
+  </div>
 
   <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 1.5.2</span>
+    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.1.2 (Geen pop-ups & Binance Futures USD)</span>
   </div>
 </div>
+
+<!-- Vaste App Navigatiebalk onderaan -->
+<nav class="app-bottom-nav">
+  <button class="nav-item active" id="navPortfolioBtn" onclick="switchNavTab('portfolio')">
+    <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+    Portefeuille
+  </button>
+  <button class="nav-item futures-nav" id="navFuturesBtn" onclick="switchNavTab('futures')">
+    <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+    Futures
+  </button>
+  <button class="nav-item" id="navAnalysisBtn" onclick="switchNavTab('analysis')">
+    <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+    Analyse
+  </button>
+  <button class="nav-item" id="navChartBtn" onclick="switchNavTab('chart')">
+    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+    Grafiek
+  </button>
+  <button class="nav-item" id="navMenuBtn" onclick="switchNavTab('menu')">
+    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+    Menu
+  </button>
+</nav>
 
 <!-- TradingView Script Library -->
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 
 <script>
-  // Firebase configuratie
   var firebaseConfig = {
     apiKey: "AIzaSyAgYZtnIb_SrQIi1L5Owk0cPc4zB3sucx4",
     authDomain: "cryptotrackersync.firebaseapp.com",
@@ -570,14 +747,19 @@
   var defaultExchanges = ['Finst', 'Kraken', 'OKX', 'Bitvavo'];
   var customExchanges = [];
   var purchases = [];
+  var futures = [];
   var livePrices = {};
-  var currentView = 'cards';
-  var isAnalysisActive = false;
-  var isChartActive = false;
+  var binanceFuturesPrices = {};
+  var currentActiveTab = 'portfolio';
+
   var analysisTimer = null;
   var currentAnalysisInterval = '1h';
   var activeFileHandle = null;
   var selectedHighlightId = null;
+  var activeCoinFilter = null; 
+  var coinDetailExchangeFilter = 'ALL';
+  var selectedStatusFilter = 'ALL';
+  var openedFromTab = 'portfolio';
 
   var isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -589,17 +771,20 @@
       if (doc.exists) {
         var data = doc.data();
         purchases = data.purchases || [];
+        futures = data.futures || [];
         customExchanges = data.customExchanges || [];
       } else {
         purchases = [];
+        futures = [];
         customExchanges = [];
       }
       autoReconcilePartiallySold();
-      renderFilters();
       renderCards();
+      renderFuturesCards();
       renderTableFilters();
       renderTable();
       fetchLivePrices();
+      fetchBinanceFuturesPrices();
       if (statusMsg) statusMsg.textContent = 'Klaar';
     }).catch(function(error) {
       console.error("Fout bij laden van cloud:", error);
@@ -610,6 +795,7 @@
   function saveToCloud() {
     db.collection("portfolios").doc(SYNC_ID).set({
       purchases: purchases,
+      futures: futures,
       customExchanges: customExchanges,
       lastUpdated: new Date().toISOString()
     }).then(function() {
@@ -642,13 +828,11 @@
     if (updated) saveToCloud();
   }
 
-  var selectedExchangeFilter = 'ALL';
-  var selectedStatusFilter = 'ALL';
   var tblSelectedStatuses = { OPEN: true, PARTSOLD: true, SOLD: true };
   var tblSelectedExchangeFilter = 'ALL';
   var tblSelectedCoinFilter = 'ALL';
 
-  var REFRESH_INTERVAL_SECONDS = 60;
+  var REFRESH_INTERVAL_SECONDS = 30;
   var secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS;
   var lastUpdatedTime = null;
   var countdownTimer = null;
@@ -657,17 +841,19 @@
   function getAllExchanges() { return Array.from(new Set(defaultExchanges.concat(customExchanges))); }
 
   function formatEUR(val) { return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(val || 0); }
+  function formatUSD(val) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0); }
   function formatAantal(val) {
     if (val === null || val === undefined || isNaN(val)) return '0';
     return new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 8 }).format(val);
   }
-  function formatKoers(val) {
-    if (val === null || val === undefined || isNaN(val)) return '€ 0,00';
+  function formatKoers(val, curr) {
+    if (val === null || val === undefined || isNaN(val)) return '0,00';
+    var prefix = (curr === 'USD') ? '$ ' : '€ ';
     var absVal = Math.abs(val);
-    if (absVal === 0) return '€ 0,00';
-    if (absVal < 0.01) return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 4, maximumFractionDigits: 8 }).format(val);
-    else if (absVal < 1) return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 4, maximumFractionDigits: 4 }).format(val);
-    else return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(val);
+    if (absVal === 0) return prefix + '0,00';
+    if (absVal < 0.01) return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: curr === 'USD' ? 'USD' : 'EUR', minimumFractionDigits: 4, maximumFractionDigits: 8 }).format(val);
+    else if (absVal < 1) return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: curr === 'USD' ? 'USD' : 'EUR', minimumFractionDigits: 4, maximumFractionDigits: 4 }).format(val);
+    else return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: curr === 'USD' ? 'USD' : 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(val);
   }
   function formatDateNL(dateStr) {
     if (!dateStr) return '';
@@ -676,979 +862,459 @@
     return dateStr;
   }
 
-  function toggleView() {
-    if (isAnalysisActive) toggleAnalysisPage();
-    if (isChartActive) closeChartTab();
-    currentView = currentView === 'cards' ? 'table' : 'cards';
-    var cardsContainer = document.getElementById('cardsContainer');
-    var tableViewContainer = document.getElementById('tableViewContainer');
-    var filterSection = document.getElementById('filterSection');
-    var viewToggleBtn = document.getElementById('viewToggleBtn');
-    selectedHighlightId = null;
-
-    if (currentView === 'table') {
-      if (cardsContainer) cardsContainer.style.display = 'none';
-      if (filterSection) filterSection.style.display = 'none';
-      if (tableViewContainer) tableViewContainer.style.display = 'flex';
-      if (viewToggleBtn) viewToggleBtn.textContent = 'Kaarten';
-      renderTableFilters();
-      renderTable();
-      updateSummary();
-    } else {
-      if (tableViewContainer) tableViewContainer.style.display = 'none';
-      if (cardsContainer) cardsContainer.style.display = 'flex';
-      if (filterSection) filterSection.style.display = purchases.length > 0 ? 'flex' : 'none';
-      if (viewToggleBtn) viewToggleBtn.textContent = 'Tabel';
-      renderFilters();
-      renderCards();
-    }
-  }
-
-  // --- ANALYSE PAGINA ---
-  function toggleAnalysisPage() {
-    if (isChartActive) closeChartTab();
-    isAnalysisActive = !isAnalysisActive;
-    var cardsContainer = document.getElementById('cardsContainer');
+  function switchNavTab(tabName) {
+    currentActiveTab = tabName;
+    var portfolioView = document.getElementById('portfolioView');
+    var futuresView = document.getElementById('futuresView');
     var tableViewContainer = document.getElementById('tableViewContainer');
     var filterSection = document.getElementById('filterSection');
     var analysisView = document.getElementById('analysisPageView');
-    var analyseNavBtn = document.getElementById('analyseNavBtn');
-
-    if (isAnalysisActive) {
-      if (cardsContainer) cardsContainer.style.display = 'none';
-      if (tableViewContainer) tableViewContainer.style.display = 'none';
-      if (filterSection) filterSection.style.display = 'none';
-      if (analysisView) analysisView.style.display = 'flex';
-      if (analyseNavBtn) analyseNavBtn.style.backgroundColor = '#581c87';
-      
-      loadBatchAnalysis();
-      if (!analysisTimer) {
-        analysisTimer = setInterval(function() {
-          if (isAnalysisActive) loadBatchAnalysis();
-        }, 600000); // 10 minuten
-      }
-    } else {
-      if (analysisView) analysisView.style.display = 'none';
-      if (analyseNavBtn) analyseNavBtn.style.backgroundColor = '#7c3aed';
-      if (analysisTimer) { clearInterval(analysisTimer); analysisTimer = null; }
-
-      if (currentView === 'table') {
-        if (tableViewContainer) tableViewContainer.style.display = 'flex';
-      } else {
-        if (cardsContainer) cardsContainer.style.display = 'flex';
-        if (filterSection) filterSection.style.display = purchases.length > 0 ? 'flex' : 'none';
-      }
-    }
-  }
-
-  function setAnalysisInterval(interval, btnElement) {
-    currentAnalysisInterval = interval;
-    var container = document.getElementById('analysisIntervalFilters');
-    if (container) {
-      var btns = container.getElementsByClassName('filter-btn');
-      for (var i = 0; i < btns.length; i++) {
-        btns[i].classList.remove('active');
-      }
-    }
-    if (btnElement) btnElement.classList.add('active');
-    loadBatchAnalysis();
-  }
-
-  function loadBatchAnalysis() {
-    var statusMsg = document.getElementById('analysisStatusMsg');
-    var container = document.getElementById('analysisListContainer');
-    if (!container) return;
-
-    var openCoins = [];
-    for (var i = 0; i < purchases.length; i++) {
-      if (!purchases[i].isSold) {
-        var sym = purchases[i].symbol.trim().toUpperCase();
-        if (openCoins.indexOf(sym) === -1) openCoins.push(sym);
-      }
-    }
-
-    if (openCoins.length === 0) {
-      container.innerHTML = '<div class="empty-state">Geen openstaande munten in de portefeuille om te analyseren.</div>';
-      if (statusMsg) statusMsg.textContent = 'Klaar';
-      return;
-    }
-
-    if (statusMsg) statusMsg.textContent = 'Marktdata ophalen (' + currentAnalysisInterval + ') voor ' + openCoins.length + ' munten...';
-    container.innerHTML = '<div style="text-align:center; padding: 30px; color: var(--text-muted);">Technische indicatoren berekenen...</div>';
-
-    var promises = openCoins.map(function(sym) {
-      return fetch('https://api.binance.com/api/v3/klines?symbol=' + sym + 'USDT&interval=' + currentAnalysisInterval + '&limit=100')
-        .then(function(res) {
-          if (!res.ok) throw new Error('Geen data');
-          return res.json();
-        })
-        .then(function(data) {
-          var closes = data.map(function(candle) { return parseFloat(candle[4]); });
-          return { symbol: sym, closes: closes, error: false };
-        })
-        .catch(function() {
-          return { symbol: sym, closes: [], error: true };
-        });
-    });
-
-    Promise.all(promises).then(function(results) {
-      container.innerHTML = '';
-      var timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      if (statusMsg) statusMsg.textContent = 'Laatst bijgewerkt om ' + timeString + ' (' + currentAnalysisInterval + ', ververst elke 10m)';
-
-      results.forEach(function(res) {
-        var card = document.createElement('div');
-        card.className = 'crypto-card';
-        card.style.padding = '10px 14px'; // Extra compacte padding
-
-        if (res.error || res.closes.length < 50) {
-          card.innerHTML = '<div class="card-header" style="margin-bottom:0;"><div class="coin-group"><div class="coin-badge">' + res.symbol + '</div></div>' +
-                           '<div class="meta-info" style="color: var(--loss);">Geen USDT-paar of onvoldoende data</div></div>';
-        } else {
-          var closes = res.closes;
-          var currentPrice = closes[closes.length - 1];
-          var rsi = calcRSI(closes, 14);
-
-          var shortPeriod = (currentAnalysisInterval === '15m' || currentAnalysisInterval === '30m') ? 9 : 20;
-          var longPeriod = (currentAnalysisInterval === '15m' || currentAnalysisInterval === '30m') ? 21 : 50;
-
-          var emaShort = calcEMA(closes, shortPeriod);
-          var emaLong = calcEMA(closes, longPeriod);
-
-          var rsiSignal = 'Neutraal'; var rsiColor = '#94a3b8';
-          if (rsi < 30) { rsiSignal = 'Oversold (Kans!)'; rsiColor = 'var(--profit)'; }
-          else if (rsi > 70) { rsiSignal = 'Overbought (Let op!)'; rsiColor = 'var(--loss)'; }
-
-          var emaSignal = 'Zijwaarts'; var emaColor = '#94a3b8';
-          if (emaShort > emaLong && currentPrice > emaShort) { emaSignal = 'Bullish (Stijgend)'; emaColor = 'var(--profit)'; }
-          else if (emaShort < emaLong && currentPrice < emaShort) { emaSignal = 'Bearish (Dalend)'; emaColor = 'var(--loss)'; }
-          else if (emaShort > emaLong && currentPrice < emaShort) { emaSignal = 'Correctie in stijgende trend'; emaColor = '#f59e0b'; }
-
-          var score = 0;
-          if (rsi < 35) score++; else if (rsi > 65) score--;
-          if (emaShort > emaLong) score++; else score--;
-          if (currentPrice > emaShort) score++; else score--;
-
-          var overall = 'HOUDEN / NEUTRAAL'; var ovColor = '#f59e0b';
-          if (score >= 2) {
-            overall = 'KOPEN';
-            ovColor = 'var(--profit)';
-          } else if (score <= -2) {
-            overall = 'VERKOPEN / SHORT (Futures)';
-            ovColor = 'var(--loss)';
-          }
-
-          // Super compacte flex-layout: Links de info, Rechtsboven het label
-          card.innerHTML = '<div class="analysis-row-flex">' +
-              // Linkerkant: Munt, Koers & Indicatoren onder elkaar
-              '<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">' +
-                '<div style="display: flex; align-items: center; gap: 6px;">' +
-                  '<div class="coin-badge">' + res.symbol + '</div>' +
-                  '<button class="btn-action chart-action" style="padding: 2px 6px; font-size: 0.7rem;" onclick="openChartTab(\'' + res.symbol + '\')">📊 Grafiek</button>' +
-                '</div>' +
-                '<div class="meta-info">Koers: <strong>$ ' + currentPrice.toFixed(4) + '</strong></div>' +
-                '<div style="font-size: 0.75rem; color: var(--text-muted);">RSI (14): <strong>' + rsi.toFixed(1) + '</strong> <span style="color: ' + rsiColor + ';">(' + rsiSignal + ')</span></div>' +
-                '<div style="font-size: 0.75rem; color: var(--text-muted);">Trend (EMA ' + shortPeriod + '/' + longPeriod + '): <strong style="color: ' + emaColor + ';">' + emaSignal + '</strong></div>' +
-              '</div>' +
-              // Rechterkant: Uitkomst / Signaal netjes rechtsboven uitgelijnd
-              '<div>' +
-                '<span class="badge-status" style="font-size: 0.7rem; padding: 5px 9px; background-color: rgba(34, 197, 94, 0.15); color: ' + ovColor + '; border: 1px solid ' + ovColor + ';">' + overall + '</span>' +
-              '</div>' +
-            '</div>';
-        }
-        container.appendChild(card);
-      });
-    });
-  }
-
-  // --- TRADINGVIEW GRAFIEK LOGICA ---
-  function openChartTab(symbol) {
-    if (isAnalysisActive) toggleAnalysisPage();
-    if (currentView === 'table') toggleView();
-    
-    isChartActive = true;
-    var cardsContainer = document.getElementById('cardsContainer');
-    var tableViewContainer = document.getElementById('tableViewContainer');
-    var filterSection = document.getElementById('filterSection');
     var chartView = document.getElementById('chartPageView');
-    var chartNavBtn = document.getElementById('chartNavBtn');
+    var menuView = document.getElementById('menuPageView');
+    var purchaseForm = document.getElementById('purchaseForm');
+    var futuresForm = document.getElementById('futuresForm');
+    var sellForm = document.getElementById('sellForm');
+    var backupChoiceCard = document.getElementById('backupChoiceCard');
+    var portfolioSummary = document.getElementById('portfolioSummaryBlock');
+    var futuresSummary = document.getElementById('futuresSummaryBlock');
 
-    if (cardsContainer) cardsContainer.style.display = 'none';
+    if (portfolioView) portfolioView.style.display = 'none';
+    if (futuresView) futuresView.style.display = 'none';
     if (tableViewContainer) tableViewContainer.style.display = 'none';
     if (filterSection) filterSection.style.display = 'none';
-    if (chartView) chartView.style.display = 'flex';
-    if (chartNavBtn) chartNavBtn.style.backgroundColor = '#0284c7';
+    if (analysisView) analysisView.style.display = 'none';
+    if (chartView) chartView.style.display = 'none';
+    if (menuView) menuView.style.display = 'none';
+    if (purchaseForm) purchaseForm.style.display = 'none';
+    if (futuresForm) futuresForm.style.display = 'none';
+    if (sellForm) sellForm.style.display = 'none';
+    if (backupChoiceCard) backupChoiceCard.style.display = 'none';
+    if (portfolioSummary) portfolioSummary.style.display = 'none';
+    if (futuresSummary) futuresSummary.style.display = 'none';
 
-    populateChartCoinSelector(symbol);
-    renderTradingViewWidget(symbol);
+    if (tabName !== 'analysis' && analysisTimer) { clearInterval(analysisTimer); analysisTimer = null; }
+
+    var navItems = document.querySelectorAll('.app-bottom-nav .nav-item');
+    for (var i = 0; i < navItems.length; i++) { navItems[i].classList.remove('active'); }
+
+    if (tabName === 'portfolio') {
+      var btn = document.getElementById('navPortfolioBtn'); if (btn) btn.classList.add('active');
+      if (portfolioView) portfolioView.style.display = 'flex';
+      if (filterSection) filterSection.style.display = 'flex';
+      if (portfolioSummary) portfolioSummary.style.display = 'flex';
+      renderCards();
+    } else if (tabName === 'futures') {
+      var btn = document.getElementById('navFuturesBtn'); if (btn) btn.classList.add('active');
+      if (futuresView) futuresView.style.display = 'flex';
+      if (futuresSummary) futuresSummary.style.display = 'flex';
+      renderFuturesCards();
+    } else if (tabName === 'analysis') {
+      var btn = document.getElementById('navAnalysisBtn'); if (btn) btn.classList.add('active');
+      if (analysisView) analysisView.style.display = 'flex';
+      if (portfolioSummary) portfolioSummary.style.display = 'flex';
+      loadBatchAnalysis();
+      if (!analysisTimer) { analysisTimer = setInterval(function() { loadBatchAnalysis(); }, 600000); }
+    } else if (tabName === 'chart') {
+      var btn = document.getElementById('navChartBtn'); if (btn) btn.classList.add('active');
+      if (chartView) chartView.style.display = 'flex';
+      if (portfolioSummary) portfolioSummary.style.display = 'flex';
+      populateChartCoinSelector('BTC');
+      renderTradingViewWidget('BTC');
+    } else if (tabName === 'menu') {
+      var btn = document.getElementById('navMenuBtn'); if (btn) btn.classList.add('active');
+      if (menuView) menuView.style.display = 'flex';
+      if (portfolioSummary) portfolioSummary.style.display = 'flex';
+    } else if (tabName === 'table') {
+      var btn = document.getElementById('navPortfolioBtn'); if (btn) btn.classList.add('active');
+      if (tableViewContainer) tableViewContainer.style.display = 'flex';
+      if (portfolioSummary) portfolioSummary.style.display = 'flex';
+      renderTableFilters();
+      renderTable();
+    }
+    updateSummary();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function closeChartTab() {
-    isChartActive = false;
-    var chartView = document.getElementById('chartPageView');
-    var chartNavBtn = document.getElementById('chartNavBtn');
-    var cardsContainer = document.getElementById('cardsContainer');
-    var filterSection = document.getElementById('filterSection');
-
-    if (chartView) chartView.style.display = 'none';
-    if (chartNavBtn) chartNavBtn.style.backgroundColor = '#0ea5e9';
-    if (cardsContainer) cardsContainer.style.display = 'flex';
-    if (filterSection) filterSection.style.display = purchases.length > 0 ? 'flex' : 'none';
-  }
-
-  function closeChartTabToAnalysis() {
-    closeChartTab();
-    toggleAnalysisPage();
-  }
-
-  function populateChartCoinSelector(activeSymbol) {
-    var selector = document.getElementById('chartCoinSelector');
-    if (!selector) return;
-    selector.innerHTML = '';
-
-    var openCoins = [];
-    for (var i = 0; i < purchases.length; i++) {
-      if (!purchases[i].isSold) {
-        var sym = purchases[i].symbol.trim().toUpperCase();
-        if (openCoins.indexOf(sym) === -1) openCoins.push(sym);
-      }
-    }
-    if (openCoins.indexOf('BTC') === -1) openCoins.push('BTC');
-
-    openCoins.sort().forEach(function(sym) {
-      var opt = document.createElement('option');
-      opt.value = sym;
-      opt.textContent = sym + 'USDT';
-      if (sym === activeSymbol) opt.selected = true;
-      selector.appendChild(opt);
-    });
-  }
-
-  function switchChartCoin(sym) {
-    renderTradingViewWidget(sym);
-  }
-
-  function renderTradingViewWidget(symbol) {
-    var wrapper = document.getElementById('tradingviewWidgetWrapper');
-    if (!wrapper) return;
-    wrapper.innerHTML = '';
-
-    new TradingView.widget({
-      "width": "100%",
-      "height": "500",
-      "symbol": "BINANCE:" + symbol + "USDT",
-      "interval": "60",
-      "timezone": "Europe/Amsterdam",
-      "theme": "dark",
-      "style": "1",
-      "locale": "nl",
-      "toolbar_bg": "#1e293b",
-      "enable_publishing": false,
-      "hide_side_toolbar": false,
-      "allow_symbol_change": true,
-      "details": true,
-      "hotlist": true,
-      "calendar": false,
-      "studies": [
-        "RSI@tv-basicstudies",
-        "MASimple@tv-basicstudies"
-      ],
-      "container_id": "tradingviewWidgetWrapper"
-    });
-  }
-
-  function jumpToCard(id) {
-    if (isAnalysisActive) toggleAnalysisPage();
-    if (isChartActive) closeChartTab();
-    var target = null;
-    for (var i = 0; i < purchases.length; i++) { if (purchases[i].id == id) { target = purchases[i]; break; } }
-    if (target) {
-      if (selectedStatusFilter === 'OPEN' && target.isSold) selectedStatusFilter = 'ALL';
-      if (selectedStatusFilter === 'PARTSOLD' && (!target.partiallySold || target.isSold)) selectedStatusFilter = 'ALL';
-      if (selectedStatusFilter === 'SOLD' && !target.isSold) selectedStatusFilter = 'ALL';
-      if (selectedExchangeFilter !== 'ALL' && target.exchange !== selectedExchangeFilter) selectedExchangeFilter = 'ALL';
-    }
-    selectedHighlightId = id;
-
-    if (currentView === 'table') {
-      currentView = 'cards';
-      var cardsContainer = document.getElementById('cardsContainer');
-      var tableViewContainer = document.getElementById('tableViewContainer');
-      var filterSection = document.getElementById('filterSection');
-      var viewToggleBtn = document.getElementById('viewToggleBtn');
-      if (tableViewContainer) tableViewContainer.style.display = 'none';
-      if (cardsContainer) cardsContainer.style.display = 'flex';
-      if (filterSection) filterSection.style.display = purchases.length > 0 ? 'flex' : 'none';
-      if (viewToggleBtn) viewToggleBtn.textContent = 'Tabel';
-      renderFilters(); renderCards();
-    } else {
-      renderFilters(); renderCards();
-    }
-    setTimeout(function() {
-      var el = document.getElementById('card_' + id);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
-  }
-
-  function populateExchangeDropdown(selectedValue) {
-    var select = document.getElementById('exchangeSelect');
-    if (!select) return;
-    select.innerHTML = '';
-    var all = getAllExchanges();
-    for (var i = 0; i < all.length; i++) {
-      var opt = document.createElement('option');
-      opt.value = all[i]; opt.textContent = all[i];
-      if (selectedValue && all[i].toLowerCase() === selectedValue.toLowerCase()) opt.selected = true;
-      select.appendChild(opt);
-    }
-    var newOpt = document.createElement('option');
-    newOpt.value = '__NEW__'; newOpt.textContent = '+ Nieuwe exchange toevoegen...';
-    select.appendChild(newOpt);
-    handleExchangeSelectChange();
-  }
-
-  function handleExchangeSelectChange() {
-    var select = document.getElementById('exchangeSelect');
-    var customInput = document.getElementById('customExchangeInput');
-    if (!select || !customInput) return;
-    if (select.value === '__NEW__') { customInput.style.display = 'block'; customInput.required = true; customInput.focus(); } 
-    else { customInput.style.display = 'none'; customInput.required = false; customInput.value = ''; }
-  }
-
-  function setFormVisibility(showForm, formType) {
-    if (isAnalysisActive) toggleAnalysisPage();
-    if (isChartActive) closeChartTab();
-    var summaryBlock = document.getElementById('portfolioSummaryBlock');
-    var filterSection = document.getElementById('filterSection');
-    var cardsContainer = document.getElementById('cardsContainer');
-    var tableViewContainer = document.getElementById('tableViewContainer');
-    var purchaseForm = document.getElementById('purchaseForm');
-    var sellForm = document.getElementById('sellForm');
-    var backupChoiceCard = document.getElementById('backupChoiceCard');
-
-    if (showForm) {
-      if (summaryBlock) summaryBlock.style.display = 'none';
-      if (filterSection) filterSection.style.display = 'none';
-      if (cardsContainer) cardsContainer.style.display = 'none';
-      if (tableViewContainer) tableViewContainer.style.display = 'none';
-      
-      if (formType === 'purchase') {
-        if (sellForm) sellForm.style.display = 'none';
-        if (backupChoiceCard) backupChoiceCard.style.display = 'none';
-        if (purchaseForm) purchaseForm.style.display = 'flex';
-      } else if (formType === 'sell') {
-        if (purchaseForm) purchaseForm.style.display = 'none';
-        if (backupChoiceCard) backupChoiceCard.style.display = 'none';
-        if (sellForm) sellForm.style.display = 'flex';
-      } else if (formType === 'backupChoice') {
-        if (purchaseForm) purchaseForm.style.display = 'none';
-        if (sellForm) sellForm.style.display = 'none';
-        updateBackupChoiceUI();
-        if (backupChoiceCard) backupChoiceCard.style.display = 'flex';
-      }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      if (purchaseForm) purchaseForm.style.display = 'none';
-      if (sellForm) sellForm.style.display = 'none';
-      if (backupChoiceCard) backupChoiceCard.style.display = 'none';
-      if (summaryBlock) summaryBlock.style.display = 'flex';
-      
-      if (currentView === 'table') {
-        if (tableViewContainer) tableViewContainer.style.display = 'flex';
-        renderTableFilters(); renderTable(); updateSummary();
-      } else {
-        if (filterSection) filterSection.style.display = purchases.length > 0 ? 'flex' : 'none';
-        if (cardsContainer) cardsContainer.style.display = 'flex';
-        renderFilters(); renderCards();
-      }
-    }
-  }
-
-  function openAddForm() {
-    selectedHighlightId = null;
-    renderCards();
-    var editId = document.getElementById('editId'); if (editId) editId.value = '';
-    var heading = document.getElementById('formHeading'); if (heading) heading.textContent = 'Nieuwe Aankoop Invoeren';
-    var saveBtn = document.getElementById('saveBtn'); if (saveBtn) saveBtn.textContent = 'Opslaan';
-    var sym = document.getElementById('symbol'); if (sym) sym.value = '';
-    var amt = document.getElementById('amount'); if (amt) amt.value = '';
-    var initAmt = document.getElementById('initialAmount'); if (initAmt) initAmt.value = '';
-    var prc = document.getElementById('price'); if (prc) prc.value = '';
-    var st = document.getElementById('priceFetchStatus'); if (st) st.textContent = '';
-    var dt = document.getElementById('date'); if (dt) dt.value = new Date().toISOString().split('T')[0];
-    var soldFields = document.getElementById('soldEditFields'); if (soldFields) soldFields.style.display = 'none';
-    populateExchangeDropdown();
-    setFormVisibility(true, 'purchase');
-  }
-
-  function editPurchase(id) {
-    selectedHighlightId = null;
-    renderCards();
-    var item = null;
-    for (var i = 0; i < purchases.length; i++) { if (purchases[i].id == id) { item = purchases[i]; break; } }
-    if (!item) return;
-
-    var editId = document.getElementById('editId'); if (editId) editId.value = item.id;
-    var heading = document.getElementById('formHeading');
-    if (heading) heading.textContent = (item.isSold ? 'Verkochte Positie ' : 'Aankoop ') + item.symbol + ' Bewerken';
-    var saveBtn = document.getElementById('saveBtn'); if (saveBtn) saveBtn.textContent = 'Wijzigingen Opslaan';
-    var sym = document.getElementById('symbol'); if (sym) sym.value = item.symbol;
-    var amt = document.getElementById('amount'); if (amt) amt.value = item.amount;
-    var initAmt = document.getElementById('initialAmount'); if (initAmt) initAmt.value = item.initialAmount || item.amount;
-    var prc = document.getElementById('price'); if (prc) prc.value = item.price;
-    var st = document.getElementById('priceFetchStatus'); if (st) st.textContent = '';
-    var dt = document.getElementById('date'); if (dt) dt.value = item.date;
-    var soldFields = document.getElementById('soldEditFields');
-    var editSellPrice = document.getElementById('editSellPrice');
-    var editSellDate = document.getElementById('editSellDate');
-
-    if (item.isSold) {
-      if (soldFields) soldFields.style.display = 'block';
-      if (editSellPrice) { editSellPrice.value = item.sellPrice !== null ? item.sellPrice : ''; editSellPrice.required = true; }
-      if (editSellDate) { editSellDate.value = item.sellDate || new Date().toISOString().split('T')[0]; editSellDate.required = true; }
-    } else {
-      if (soldFields) soldFields.style.display = 'none';
-      if (editSellPrice) editSellPrice.required = false;
-      if (editSellDate) editSellDate.required = false;
-    }
-    populateExchangeDropdown(item.exchange);
-    setFormVisibility(true, 'purchase');
-  }
-
-  function closeForm() { setFormVisibility(false); }
-  function openBackupChoiceDialog() { setFormVisibility(true, 'backupChoice'); }
-  function closeBackupChoiceDialog() { setFormVisibility(false); }
-
-  function updateBackupChoiceUI() {
-    var info = document.getElementById('linkedFileInfo');
-    var btnQuick = document.getElementById('btnQuickBackup');
-    if (!info || !btnQuick) return;
-    if (activeFileHandle && activeFileHandle.name) {
-      info.style.display = 'block';
-      info.innerHTML = '📁 Gekoppeld bestand: <strong>' + activeFileHandle.name + '</strong>';
-      btnQuick.textContent = '💾 Direct Opslaan naar ' + activeFileHandle.name;
-    } else {
-      info.style.display = 'none';
-      btnQuick.textContent = '💾 Backup Maken (Locatie kiezen)';
-    }
-  }
-
-  function executeQuickBackup() {
-    if (activeFileHandle) { writeToHandle(activeFileHandle); closeBackupChoiceDialog(); } 
-    else { executeBackupChoice('exportNew'); }
-  }
-
-  function executeBackupChoice(choice) {
-    closeBackupChoiceDialog();
-    if (choice === 'exportNew') exportBackupNewLocation();
-    else if (choice === 'import') importBackup();
-  }
-
-  function handleSymbolInput() {
-    clearTimeout(symbolInputTimeout);
-    symbolInputTimeout = setTimeout(function() { fetchPriceForForm(false); }, 500);
-  }
-
-  function fetchPriceForForm(force) {
-    var editId = document.getElementById('editId');
-    if (editId && editId.value && !force) return;
-    var symbolInput = document.getElementById('symbol');
-    var priceInput = document.getElementById('price');
-    var statusSpan = document.getElementById('priceFetchStatus');
-    if (!symbolInput || !priceInput || !statusSpan) return;
-
-    var sym = symbolInput.value.trim().toUpperCase();
-    if (sym.length < 2) { statusSpan.textContent = ''; return; }
-
-    statusSpan.style.color = 'var(--accent)';
-    statusSpan.textContent = 'Koers van ' + sym + ' ophalen...';
-
-    fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'EUR')
-      .then(function(res) {
-        if (res.ok) return res.json();
-        throw new Error('Geen direct EUR paar');
-      })
+  // --- BINANCE FUTURES API ---
+  function fetchBinanceFuturesPrices() {
+    fetch('https://fapi.binance.com/fapi/v1/ticker/price')
+      .then(function(res) { return res.json(); })
       .then(function(data) {
-        var p = parseFloat(data.price);
-        if (!isNaN(p) && p > 0) {
-          priceInput.value = p;
-          statusSpan.style.color = 'var(--profit)';
-          statusSpan.textContent = 'Koers ingevuld (EUR): ' + formatKoers(p);
+        if (Array.isArray(data)) {
+          data.forEach(function(t) {
+            var sym = t.symbol.toUpperCase();
+            var price = parseFloat(t.price);
+            if (!isNaN(price)) {
+              binanceFuturesPrices[sym] = price;
+            }
+          });
+          renderFuturesCards();
         }
       })
-      .catch(function() {
-        statusSpan.textContent = 'Geen direct EUR-paar. USDT converteren...';
-        Promise.all([
-          fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'USDT').then(function(r) { return r.ok ? r.json() : null; }),
-          fetch('https://api.binance.com/api/v3/ticker/price?symbol=EURUSDT').then(function(r) { return r.ok ? r.json() : null; })
-        ])
-        .then(function(results) {
-          var coinUsdtData = results[0];
-          var eurUsdtData = results[1];
-          if (coinUsdtData && eurUsdtData) {
-            var priceInUsdt = parseFloat(coinUsdtData.price);
-            var eurUsdtRate = parseFloat(eurUsdtData.price);
-            if (!isNaN(priceInUsdt) && !isNaN(eurUsdtRate) && eurUsdtRate > 0) {
-              var priceInEur = priceInUsdt / eurUsdtRate;
-              priceInput.value = priceInEur;
-              statusSpan.style.color = 'var(--profit)';
-              statusSpan.textContent = 'Koers ingevuld (omgerekend via USDT): ' + formatKoers(priceInEur);
-              return;
-            }
-          }
-          throw new Error('Geen USDT paar');
-        })
-        .catch(function() {
-          statusSpan.style.color = 'var(--text-muted)';
-          statusSpan.textContent = 'Niet gevonden op Binance. Vul prijs handmatig in.';
-        });
+      .catch(function(err) {
+        console.warn("Binance Futures API kon niet worden geladen.", err);
       });
   }
 
-  function savePurchase(event) {
-    event.preventDefault();
-    var editId = document.getElementById('editId').value;
-    var symbol = document.getElementById('symbol').value.trim().toUpperCase();
-    var select = document.getElementById('exchangeSelect');
-    var exchange = select ? select.value : 'Overig';
+  function manualRefreshFutures() {
+    secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS;
+    fetchBinanceFuturesPrices();
+    fetchLivePrices();
+  }
 
-    if (exchange === '__NEW__') {
-      var customVal = document.getElementById('customExchangeInput').value.trim();
-      if (!customVal) return;
-      exchange = customVal;
-      if (!getAllExchanges().map(function(e) { return e.toLowerCase(); }).includes(exchange.toLowerCase())) {
-        customExchanges.push(exchange);
-      }
+  function getBinanceFuturesSymbol(coin) {
+    var c = coin.trim().toUpperCase();
+    if (c === 'XBT') c = 'BTC';
+    return c + 'USDT';
+  }
+
+  function fetchPriceForFuturesForm(coin, callback) {
+    var binanceSym = getBinanceFuturesSymbol(coin);
+    fetch('https://fapi.binance.com/fapi/v1/ticker/price?symbol=' + binanceSym)
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        var p = parseFloat(data.price);
+        if (!isNaN(p) && p > 0) {
+          callback(p, 'Binance Futures');
+        } else {
+          callback(null, null);
+        }
+      })
+      .catch(function() {
+        callback(null, null);
+      });
+  }
+
+  // --- FUTURES FORMULIER ---
+  function openFuturesAddForm() {
+    var portfolioView = document.getElementById('portfolioView');
+    var futuresView = document.getElementById('futuresView');
+    var futuresForm = document.getElementById('futuresForm');
+    var portfolioSummary = document.getElementById('portfolioSummaryBlock');
+    var futuresSummary = document.getElementById('futuresSummaryBlock');
+
+    if (portfolioView) portfolioView.style.display = 'none';
+    if (futuresView) futuresView.style.display = 'none';
+    if (portfolioSummary) portfolioSummary.style.display = 'none';
+    if (futuresSummary) futuresSummary.style.display = 'none';
+    if (futuresForm) futuresForm.style.display = 'flex';
+
+    var editId = document.getElementById('editFutureId'); if (editId) editId.value = '';
+    var heading = document.getElementById('futuresFormHeading'); if (heading) heading.textContent = 'Futures Positie Invoeren (USD)';
+    var saveBtn = document.getElementById('saveFutBtn'); if (saveBtn) saveBtn.textContent = 'Future Opslaan';
+    var sym = document.getElementById('futSymbol'); if (sym) sym.value = '';
+    var type = document.getElementById('futType'); if (type) type.value = 'LONG';
+    var lev = document.getElementById('futLeverage'); if (lev) lev.value = '10';
+    var margin = document.getElementById('futMargin'); if (margin) margin.value = '';
+    var amt = document.getElementById('futAmount'); if (amt) amt.value = '';
+    var price = document.getElementById('futEntryPrice'); if (price) price.value = '';
+    var dt = document.getElementById('futDate'); if (dt) dt.value = new Date().toISOString().split('T')[0];
+    var closeFields = document.getElementById('futCloseFields'); if (closeFields) closeFields.style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function editFuture(id) {
+    var item = null;
+    for (var i = 0; i < futures.length; i++) { if (futures[i].id == id) { item = futures[i]; break; } }
+    if (!item) return;
+
+    var portfolioView = document.getElementById('portfolioView');
+    var futuresView = document.getElementById('futuresView');
+    var futuresForm = document.getElementById('futuresForm');
+    var portfolioSummary = document.getElementById('portfolioSummaryBlock');
+    var futuresSummary = document.getElementById('futuresSummaryBlock');
+
+    if (portfolioView) portfolioView.style.display = 'none';
+    if (futuresView) futuresView.style.display = 'none';
+    if (portfolioSummary) portfolioSummary.style.display = 'none';
+    if (futuresSummary) futuresSummary.style.display = 'none';
+    if (futuresForm) futuresForm.style.display = 'flex';
+
+    var editId = document.getElementById('editFutureId'); if (editId) editId.value = item.id;
+    var heading = document.getElementById('futuresFormHeading'); if (heading) heading.textContent = 'Future ' + item.symbol + ' Bewerken';
+    var saveBtn = document.getElementById('saveFutBtn'); if (saveBtn) saveBtn.textContent = 'Wijzigingen Opslaan';
+    var sym = document.getElementById('futSymbol'); if (sym) sym.value = item.symbol;
+    var type = document.getElementById('futType'); if (type) type.value = item.type || 'LONG';
+    var lev = document.getElementById('futLeverage'); if (lev) lev.value = item.leverage;
+    var margin = document.getElementById('futMargin'); if (margin) margin.value = item.margin;
+    var amt = document.getElementById('futAmount'); if (amt) amt.value = item.amount;
+    var price = document.getElementById('futEntryPrice'); if (price) price.value = item.entryPrice;
+    var dt = document.getElementById('futDate'); if (dt) dt.value = item.date;
+
+    var closeFields = document.getElementById('futCloseFields');
+    var editClosePrice = document.getElementById('editFutClosePrice');
+    var editCloseDate = document.getElementById('editFutCloseDate');
+
+    if (item.isClosed) {
+      if (closeFields) closeFields.style.display = 'block';
+      if (editClosePrice) { editClosePrice.value = item.closePrice !== null ? item.closePrice : ''; editClosePrice.required = true; }
+      if (editCloseDate) { editCloseDate.value = item.closeDate || new Date().toISOString().split('T')[0]; editCloseDate.required = true; }
+    } else {
+      if (closeFields) closeFields.style.display = 'none';
+      if (editClosePrice) editClosePrice.required = false;
+      if (editCloseDate) editCloseDate.required = false;
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
-    var amount = parseFloat(document.getElementById('amount').value);
-    var initAmtInput = parseFloat(document.getElementById('initialAmount').value);
-    var initialAmount = !isNaN(initAmtInput) && initAmtInput >= amount ? initAmtInput : amount;
-    var price = parseFloat(document.getElementById('price').value);
-    var date = document.getElementById('date').value;
+  function closeFuturesForm() {
+    var futuresForm = document.getElementById('futuresForm');
+    if (futuresForm) futuresForm.style.display = 'none';
+    switchNavTab('futures');
+  }
+
+  function saveFuture(event) {
+    event.preventDefault();
+    var editId = document.getElementById('editFutureId').value;
+    var symbol = document.getElementById('futSymbol').value.trim().toUpperCase();
+    if (symbol === 'BTC') symbol = 'XBT';
+    var type = document.getElementById('futType').value;
+    var leverage = parseFloat(document.getElementById('futLeverage').value) || 1;
+    var margin = parseFloat(document.getElementById('futMargin').value) || 0;
+    var amount = parseFloat(document.getElementById('futAmount').value) || 0;
+    var entryPrice = parseFloat(document.getElementById('futEntryPrice').value) || 0;
+    var date = document.getElementById('futDate').value;
 
     if (editId) {
-      for (var i = 0; i < purchases.length; i++) {
-        if (purchases[i].id == editId) {
-          purchases[i].symbol = symbol; purchases[i].exchange = exchange;
-          purchases[i].amount = amount; purchases[i].initialAmount = initialAmount;
-          purchases[i].price = price; purchases[i].date = date;
-          if (!purchases[i].isSold) purchases[i].partiallySold = (initialAmount > amount);
-          if (purchases[i].isSold) {
-            var esp = parseFloat(document.getElementById('editSellPrice').value);
-            var esd = document.getElementById('editSellDate').value;
-            if (!isNaN(esp)) purchases[i].sellPrice = esp;
-            if (esd) purchases[i].sellDate = esd;
+      for (var i = 0; i < futures.length; i++) {
+        if (futures[i].id == editId) {
+          futures[i].symbol = symbol;
+          futures[i].type = type;
+          futures[i].leverage = leverage;
+          futures[i].margin = margin;
+          futures[i].amount = amount;
+          futures[i].entryPrice = entryPrice;
+          futures[i].date = date;
+          if (futures[i].isClosed) {
+            var cp = parseFloat(document.getElementById('editFutClosePrice').value);
+            var cd = document.getElementById('editFutCloseDate').value;
+            if (!isNaN(cp)) futures[i].closePrice = cp;
+            if (cd) futures[i].closeDate = cd;
           }
           break;
         }
       }
-      selectedHighlightId = null;
     } else {
-      purchases.unshift({
-        id: Date.now(), symbol: symbol, exchange: exchange, amount: amount, initialAmount: initialAmount,
-        price: price, date: date, isSold: false, sellPrice: null, sellDate: null, partiallySold: (initialAmount > amount)
+      futures.unshift({
+        id: Date.now(),
+        symbol: symbol,
+        type: type,
+        leverage: leverage,
+        margin: margin,
+        amount: amount,
+        entryPrice: entryPrice,
+        date: date,
+        isClosed: false,
+        closePrice: null,
+        closeDate: null
       });
-      selectedHighlightId = null;
     }
-    saveToCloud(); closeForm(); renderFilters(); renderCards(); renderTableFilters(); renderTable(); updateSummary(); fetchLivePrices();
+    saveToCloud();
+    closeFuturesForm();
+    renderFuturesCards();
   }
 
-  function openSellDialog(id) {
+  function openCloseFutureDialog(id) {
     var item = null;
-    for (var i = 0; i < purchases.length; i++) { if (purchases[i].id === id) { item = purchases[i]; break; } }
+    for (var i = 0; i < futures.length; i++) { if (futures[i].id === id) { item = futures[i]; break; } }
     if (!item) return;
 
-    var sellId = document.getElementById('sellId'); if (sellId) sellId.value = item.id;
-    var heading = document.getElementById('sellFormHeading'); if (heading) heading.textContent = item.symbol + ' Verkopen';
-    var sellAmount = document.getElementById('sellAmount');
-    if (sellAmount) { sellAmount.value = item.amount; sellAmount.max = item.amount; }
-    var sellPrice = document.getElementById('sellPrice'); if (sellPrice) sellPrice.value = livePrices[item.symbol] || item.price;
-    var sellDate = document.getElementById('sellDate'); if (sellDate) sellDate.value = new Date().toISOString().split('T')[0];
-    var displayPurchaseDate = document.getElementById('displayPurchaseDate');
-    if (displayPurchaseDate) displayPurchaseDate.value = formatDateNL(item.date);
-    var dt = document.getElementById('sellFormDetails');
-    if (dt) dt.innerHTML = 'Aangekocht: <strong>' + formatAantal(item.amount) + '</strong> stuks @ ' + formatKoers(item.price) + ' (op ' + formatDateNL(item.date) + ') via ' + item.exchange;
-    updateSellYieldPreview();
-    setFormVisibility(true, 'sell');
+    var binanceSym = getBinanceFuturesSymbol(item.symbol);
+    var curPrice = binanceFuturesPrices[binanceSym] || item.entryPrice;
+    var closeP = prompt("Voer de sluitingsprijs in voor " + item.symbol + " (USD):", curPrice);
+    if (closeP === null) return;
+    var pVal = parseFloat(closeP);
+    if (isNaN(pVal)) { alert("Ongeldige prijs."); return; }
+
+    var closeD = new Date().toISOString().split('T')[0];
+    item.isClosed = true;
+    item.closePrice = pVal;
+    item.closeDate = closeD;
+
+    saveToCloud();
+    renderFuturesCards();
   }
 
-  function updateSellYieldPreview() {
-    var amt = parseFloat(document.getElementById('sellAmount').value) || 0;
-    var prc = parseFloat(document.getElementById('sellPrice').value) || 0;
-    var previewEl = document.getElementById('sellYieldPreview');
-    if (previewEl) previewEl.textContent = 'Verwachte opbrengst: ' + formatEUR(amt * prc);
-  }
-
-  function closeSellForm() { setFormVisibility(false); }
-
-  function confirmSale(event) {
-    event.preventDefault();
-    var sellId = document.getElementById('sellId').value;
-    var sellAmount = parseFloat(document.getElementById('sellAmount').value);
-    var sellPrice = parseFloat(document.getElementById('sellPrice').value);
-    var sellDate = document.getElementById('sellDate').value;
-    var item = null;
-    for (var i = 0; i < purchases.length; i++) { if (purchases[i].id == sellId) { item = purchases[i]; break; } }
-    if (!item) return;
-
-    if (isNaN(sellAmount) || sellAmount <= 0 || sellAmount > item.amount) {
-      alert('Voer een geldig aantal stuks in tussen 0 en ' + formatAantal(item.amount)); return;
-    }
-
-    if (!item.initialAmount) item.initialAmount = item.amount;
-    var currentInitial = item.initialAmount;
-    var originalDate = item.date;
-
-    if (sellAmount === item.amount) {
-      item.isSold = true; item.sellPrice = sellPrice; item.sellDate = sellDate;
-    } else {
-      var remaining = +(item.amount - sellAmount).toFixed(8);
-      var soldPart = {
-        id: Date.now(), symbol: item.symbol, exchange: item.exchange, amount: sellAmount, initialAmount: sellAmount,
-        price: item.price, date: originalDate, isSold: true, sellPrice: sellPrice, sellDate: sellDate, partiallySold: false
-      };
-      purchases.unshift(soldPart);
-      item.initialAmount = currentInitial; item.amount = remaining; item.date = originalDate; item.partiallySold = true;
-    }
-    selectedHighlightId = null;
-    saveToCloud(); closeSellForm(); renderFilters(); renderCards(); renderTableFilters(); renderTable(); updateSummary(); updateStatusDisplay();
-  }
-
-  function reopenPosition(id) {
-    if (confirm('Wil je deze positie weer heropenen?')) {
-      for (var i = 0; i < purchases.length; i++) {
-        if (purchases[i].id === id) { purchases[i].isSold = false; purchases[i].sellPrice = null; purchases[i].sellDate = null; break; }
+  function reopenFuture(id) {
+    if (confirm('Wil je deze future positie weer heropenen?')) {
+      for (var i = 0; i < futures.length; i++) {
+        if (futures[i].id === id) {
+          futures[i].isClosed = false;
+          futures[i].closePrice = null;
+          futures[i].closeDate = null;
+          break;
+        }
       }
-      selectedHighlightId = null;
-      saveToCloud(); renderFilters(); renderCards(); renderTableFilters(); renderTable(); fetchLivePrices();
+      saveToCloud();
+      renderFuturesCards();
     }
   }
 
-  function deletePurchase(id) {
-    if (confirm('Weet je zeker dat je deze aankoopbox wilt verwijderen?')) {
-      purchases = purchases.filter(function(p) { return p.id !== id; });
-      if (selectedHighlightId === id) selectedHighlightId = null;
-      saveToCloud(); renderFilters(); renderCards(); renderTableFilters(); renderTable(); updateSummary(); updateStatusDisplay();
+  function deleteFuture(id) {
+    if (confirm('Weet je zeker dat je deze future positie wilt verwijderen?')) {
+      futures = futures.filter(function(f) { return f.id !== id; });
+      saveToCloud();
+      renderFuturesCards();
     }
   }
 
-  function getBackupJSON() {
-    return JSON.stringify({ app: 'CryptoTracker', exportDate: new Date().toISOString(), purchases: purchases, customExchanges: customExchanges }, null, 2);
+  function handleFutSymbolInput() {
+    var symInput = document.getElementById('futSymbol');
+    var statusSpan = document.getElementById('futPriceFetchStatus');
+    if (!symInput || !statusSpan) return;
+
+    var sym = symInput.value.trim().toUpperCase();
+    if (sym.length < 2) { statusSpan.textContent = ''; return; }
+
+    statusSpan.style.color = 'var(--accent)';
+    statusSpan.textContent = 'Koers opzoeken (Binance Futures)...';
+
+    fetchPriceForFuturesForm(sym, function(price, source) {
+      if (price) {
+        statusSpan.style.color = 'var(--profit)';
+        statusSpan.textContent = 'Live koers (' + source + '): ' + formatKoers(price, 'USD');
+        var entryInput = document.getElementById('futEntryPrice');
+        if (entryInput && !entryInput.value) entryInput.value = price;
+      } else {
+        statusSpan.style.color = 'var(--text-muted)';
+        statusSpan.textContent = 'Handmatig instapprijs invullen.';
+      }
+    });
   }
 
-  function writeToHandle(handle) {
-    var jsonStr = getBackupJSON();
-    handle.createWritable().then(function(w) { return w.write(jsonStr).then(function() { return w.close(); }); })
-    .then(function() { alert('Backup direct succesvol opgeslagen in ' + handle.name + '!'); })
-    .catch(function(err) { alert('Kon niet direct opslaan: ' + err.message + '. Kies een nieuwe locatie.'); exportBackupNewLocation(); });
-  }
+  // --- RENDER FUTURES CARDS & SUMMARY ---
+  function renderFuturesCards() {
+    var container = document.getElementById('futuresCardsContainer');
+    if (!container) return;
+    container.innerHTML = '';
 
-  function exportBackupNewLocation() {
-    if (purchases.length === 0) { alert('Er zijn nog geen transacties om te backuppen.'); return; }
-    var fileName = 'crypto_portfolio_backup.json';
-    var jsonStr = getBackupJSON();
+    var statusFilter = document.getElementById('futuresStatusSelect') ? document.getElementById('futuresStatusSelect').value : 'OPEN';
+    var typeFilter = document.getElementById('futuresTypeSelect') ? document.getElementById('futuresTypeSelect').value : 'ALL';
 
-    if (!isMobileDevice && window.showSaveFilePicker) {
-      window.showSaveFilePicker({ suggestedName: fileName, types: [{ description: 'JSON Bestand', accept: { 'application/json': ['.json'] } }] })
-      .then(function(handle) { saveActiveFileHandle(handle); return handle.createWritable().then(function(w) { return w.write(jsonStr).then(function() { return w.close(); }); }); })
-      .then(function() { alert('Backup succesvol opgeslagen en gekoppeld!'); })
-      .catch(function(err) { if (err.name !== 'AbortError') fallbackDownloadOrShare(jsonStr, fileName); });
+    var filtered = futures.filter(function(f) {
+      var matchStatus = (statusFilter === 'ALL') || (statusFilter === 'OPEN' && !f.isClosed) || (statusFilter === 'CLOSED' && f.isClosed);
+      var matchType = (typeFilter === 'ALL') || (f.type === typeFilter);
+      return matchStatus && matchType;
+    });
+
+    if (futures.length === 0) {
+      container.innerHTML = '<div class="empty-state">Nog geen Futures ingevoerd. Klik op "+ Future Positie" om te beginnen.</div>';
+      updateFuturesSummary([]);
       return;
     }
-    fallbackDownloadOrShare(jsonStr, fileName);
-  }
 
-  function fallbackDownloadOrShare(jsonStr, fileName) {
-    var blob = new Blob([jsonStr], { type: 'application/json' });
-    if (navigator.canShare && navigator.share) {
-      var file = new File([blob], fileName, { type: 'application/json' });
-      if (navigator.canShare({ files: [file] })) {
-        navigator.share({
-          files: [file],
-          title: 'Crypto Portefeuille Backup',
-          text: 'Hier is je backupbestand van de Crypto Tracker.'
-        }).catch(function(err) {
-          if (err.name !== 'AbortError') regularDownload(blob, fileName);
-        });
-        return;
-      }
-    }
-    regularDownload(blob, fileName);
-  }
-
-  function regularDownload(blob, fileName) {
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a'); a.href = url; a.download = fileName;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    alert('Backup gedownload als ' + fileName);
-  }
-
-  function saveActiveFileHandle(handle) {
-    activeFileHandle = handle;
-    var info = document.getElementById('linkedFileInfo');
-    var btnQuick = document.getElementById('btnQuickBackup');
-    if (info && btnQuick) {
-      info.style.display = 'block'; info.innerHTML = '📁 Gekoppeld bestand: <strong>' + handle.name + '</strong>';
-      btnQuick.textContent = '💾 Direct Opslaan naar ' + handle.name;
-    }
-  }
-
-  function importBackup() {
-    if (!isMobileDevice && window.showOpenFilePicker) {
-      window.showOpenFilePicker({ multiple: false, types: [{ description: 'JSON Bestand', accept: { 'application/json': ['.json'] } }] })
-      .then(function(handles) { var handle = handles[0]; saveActiveFileHandle(handle); return handle.getFile().then(function(f) { return f.text(); }); })
-      .then(function(text) { applyRestoredData(text); })
-      .catch(function(err) { if (err.name !== 'AbortError') { var input = document.getElementById('fallbackFileInput'); if (input) input.click(); } });
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="empty-state">Geen futures gevonden met deze filters.</div>';
+      updateFuturesSummary([]);
       return;
     }
-    var input = document.getElementById('fallbackFileInput'); if (input) input.click();
-  }
 
-  function handleFallbackRestore(event) {
-    var file = event.target.files[0]; if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function(e) { applyRestoredData(e.target.result); event.target.value = ''; };
-    reader.readAsText(file);
-  }
+    filtered.forEach(function(f) {
+      var binanceSym = getBinanceFuturesSymbol(f.symbol);
+      var curPrice = binanceFuturesPrices[binanceSym] !== undefined ? binanceFuturesPrices[binanceSym] : f.entryPrice;
 
-  function applyRestoredData(jsonString) {
-    try {
-      var data = JSON.parse(jsonString);
-      if (!data || !Array.isArray(data.purchases)) { alert('Ongeldig backupbestand.'); return; }
-      if (!confirm('Wil je ' + data.purchases.length + ' registraties herstellen?')) return;
-      purchases = data.purchases;
-      if (Array.isArray(data.customExchanges)) customExchanges = data.customExchanges;
-      autoReconcilePartiallySold(); selectedHighlightId = null;
-      saveToCloud(); renderFilters(); renderCards(); renderTableFilters(); renderTable(); fetchLivePrices();
-      alert('Gegevens succesvol hersteld!');
-    } catch(err) { alert('Fout bij herstellen: ' + err.message); }
-  }
+      var priceDiff = (f.type === 'LONG') ? (curPrice - f.entryPrice) : (f.entryPrice - curPrice);
+      var pnl = priceDiff * f.amount;
+      var pnlPct = f.margin > 0 ? (pnl / f.margin) * 100 : 0;
+      
+      var posValue = f.amount * curPrice;
 
-  function fetchLivePrices() {
-    var openSymbols = [];
-    for (var i = 0; i < purchases.length; i++) {
-      if (!purchases[i].isSold) {
-        var s = purchases[i].symbol.trim().toUpperCase();
-        if (openSymbols.indexOf(s) === -1) openSymbols.push(s);
+      if (f.isClosed) {
+        var closePriceDiff = (f.type === 'LONG') ? (f.closePrice - f.entryPrice) : (f.entryPrice - f.closePrice);
+        var closedPnl = closePriceDiff * f.amount;
+        pnl = closedPnl;
+        pnlPct = f.margin > 0 ? (closedPnl / f.margin) * 100 : 0;
+        posValue = f.amount * f.closePrice;
       }
-    }
-    if (openSymbols.length === 0) { updateStatusDisplay(); updateSummary(); return; }
 
-    fetch('https://api.binance.com/api/v3/ticker/price?symbol=EURUSDT')
-      .then(function(r) { return r.ok ? r.json() : null; })
-      .then(function(eurData) {
-        var eurUsdtRate = eurData ? parseFloat(eurData.price) : 1.08;
-        var promises = openSymbols.map(function(sym) {
-          return fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'EUR')
-            .then(function(r) { if (r.ok) return r.json(); throw new Error('Geen EUR'); })
-            .then(function(d) { if (d && d.price) livePrices[sym] = parseFloat(d.price); })
-            .catch(function() {
-              return fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'USDT')
-                .then(function(r2) { return r2.ok ? r2.json() : null; })
-                .then(function(usdtData) { if (usdtData && usdtData.price) livePrices[sym] = parseFloat(usdtData.price) / eurUsdtRate; })
-                .catch(function() {});
-            });
-        });
-        return Promise.all(promises);
-      })
-      .then(function() {
-        lastUpdatedTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        renderCards(); renderTable(); updateSummary(); secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS; updateStatusDisplay();
-      });
-  }
+      var sign = pnl >= 0 ? '+' : '';
+      var colorClass = pnl >= 0 ? 'val-profit' : 'val-loss';
+      var typeBadgeClass = f.type === 'LONG' ? 'futures-long' : 'futures-short';
 
-  function manualRefresh() {
-    secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS;
-    var statusMsg = document.getElementById('statusMessage');
-    if (statusMsg) statusMsg.textContent = 'Koersen ophalen...';
-    fetchLivePrices();
-  }
+      var card = document.createElement('div');
+      card.className = 'crypto-card ' + (f.isClosed ? 'is-sold' : '');
 
-  function updateStatusDisplay() {
-    var statusMsg = document.getElementById('statusMessage'); if (!statusMsg) return;
-    if (purchases.length === 0) { statusMsg.textContent = 'Geen data'; return; }
-    var openCount = purchases.filter(function(p) { return !p.isSold; }).length;
-    if (openCount === 0) { statusMsg.textContent = 'Alles verkocht'; return; }
-    if (lastUpdatedTime) statusMsg.textContent = 'Bijgewerkt: ' + lastUpdatedTime + ' (' + secondsUntilNextRefresh + 's)';
-    else statusMsg.textContent = 'Klaar (' + secondsUntilNextRefresh + 's)';
-  }
+      var metricsHTML = '';
+      var actionButtons = '';
 
-  function startAutoRefreshTimer() {
-    if (countdownTimer) clearInterval(countdownTimer);
-    countdownTimer = setInterval(function() {
-      var openCount = purchases.filter(function(p) { return !p.isSold; }).length;
-      if (openCount > 0) {
-        secondsUntilNextRefresh--;
-        if (secondsUntilNextRefresh <= 0) { secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS; fetchLivePrices(); } 
-        else { updateStatusDisplay(); }
+      if (f.isClosed) {
+        metricsHTML = '<div class="metrics-grid">' +
+          '<div class="metric-col"><span>Start Margin</span><strong>' + formatUSD(f.margin) + '</strong></div>' +
+          '<div class="metric-col"><span>Sluitingsprijs</span><strong>' + formatKoers(f.closePrice, 'USD') + '</strong></div>' +
+          '<div class="metric-col"><span>Resultaat</span><strong class="' + colorClass + '">' + sign + formatUSD(pnl) + ' (' + sign + pnlPct.toFixed(1) + '%)</strong></div>' +
+          '<div class="metric-col"><span>Hefboom</span><strong>' + f.leverage + 'x</strong></div>' +
+        '</div>';
+
+        actionButtons = '<button class="btn-action" onclick="editFuture(' + f.id + ')">Bewerken</button>' +
+                        '<button class="btn-action" onclick="reopenFuture(' + f.id + ')">Heropenen</button>' +
+                        '<button class="btn-action delete" onclick="deleteFuture(' + f.id + ')">Verwijderen</button>';
+      } else {
+        metricsHTML = '<div class="metrics-grid">' +
+          '<div class="metric-col"><span>Start Margin</span><strong>' + formatUSD(f.margin) + '</strong></div>' +
+          '<div class="metric-col"><span>Marktkoers</span><strong>' + formatKoers(curPrice, 'USD') + '</strong></div>' +
+          '<div class="metric-col"><span>Positiewaarde</span><strong>' + formatUSD(posValue) + '</strong></div>' +
+          '<div class="metric-col"><span>Resultaat</span><strong class="' + colorClass + '">' + sign + formatUSD(pnl) + ' (' + sign + pnlPct.toFixed(1) + '%)</strong></div>' +
+        '</div>';
+
+        actionButtons = '<button class="btn-action sold-action" onclick="openCloseFutureDialog(' + f.id + ')">Sluiten</button>' +
+                        '<button class="btn-action" onclick="editFuture(' + f.id + ')">Bewerken</button>' +
+                        '<button class="btn-action delete" onclick="deleteFuture(' + f.id + ')">Verwijderen</button>';
       }
-    }, 1000);
-  }
 
-  // --- TECHNISCHE ANALYSE HULPFUNCTIES ---
-  function calcRSI(closes, period) {
-    if (closes.length <= period) return 50;
-    let avgGain = 0, avgLoss = 0;
-    for (let i = 1; i <= period; i++) {
-      let diff = closes[i] - closes[i-1];
-      if (diff >= 0) avgGain += diff; else avgLoss -= diff;
-    }
-    avgGain /= period; avgLoss /= period;
-    for (let i = period + 1; i < closes.length; i++) {
-      let diff = closes[i] - closes[i-1];
-      let gain = diff >= 0 ? diff : 0;
-      let loss = diff < 0 ? -diff : 0;
-      avgGain = ((avgGain * (period - 1)) + gain) / period;
-      avgLoss = ((avgLoss * (period - 1)) + loss) / period;
-    }
-    if (avgLoss === 0) return 100;
-    let rs = avgGain / avgLoss;
-    return 100 - (100 / (1 + rs));
-  }
+      var statusText = f.isClosed ? '<span class="badge-status sold">Gesloten: ' + formatDateNL(f.closeDate) + '</span>' : '<span class="badge-status open">Open Positie</span>';
 
-  function calcEMA(closes, period) {
-    if (closes.length < period) return closes[closes.length-1];
-    let k = 2 / (period + 1);
-    let ema = closes[0];
-    for (let i = 1; i < closes.length; i++) {
-      ema = (closes[i] * k) + (ema * (1 - k));
-    }
-    return ema;
-  }
+      card.innerHTML = '<div class="card-header">' +
+          '<div class="coin-group"><div class="coin-badge">' + f.symbol + '</div> <span class="badge-status ' + typeBadgeClass + '">' + f.type + ' ' + f.leverage + 'x</span> ' + statusText + '</div>' +
+          '<div class="meta-info">Binance Futures • ' + formatDateNL(f.date) + '</div>' +
+        '</div>' +
+        '<div class="purchase-details">Contracten: <strong>' + formatAantal(f.amount) + '</strong> | Instap: <strong>' + formatKoers(f.entryPrice, 'USD') + '</strong></div>' +
+        '<div class="card-divider"></div>' + metricsHTML +
+        '<div class="card-actions">' + actionButtons + '</div>';
 
-  // --- Kaarten & Filters ---
-  function setStatusFilter(status) { selectedStatusFilter = status; renderStatusFilters(); renderCards(); updateSummary(); }
-  function setExchangeFilter(exchange) { selectedExchangeFilter = exchange; renderExchangeFilters(); renderCards(); updateSummary(); }
-
-  function renderStatusFilters() {
-    var container = document.getElementById('statusFilters'); if (!container) return; container.innerHTML = '';
-    var hasOpen = purchases.some(function(p) { return !p.isSold && !p.partiallySold; });
-    var hasPartSold = purchases.some(function(p) { return !p.isSold && p.partiallySold; });
-    var hasSold = purchases.some(function(p) { return p.isSold; });
-
-    if (selectedStatusFilter === 'OPEN' && !hasOpen && !hasPartSold) selectedStatusFilter = 'ALL';
-    if (selectedStatusFilter === 'PARTSOLD' && !hasPartSold) selectedStatusFilter = 'ALL';
-    if (selectedStatusFilter === 'SOLD' && !hasSold) selectedStatusFilter = 'ALL';
-
-    var btnAll = document.createElement('button');
-    btnAll.className = 'filter-btn ' + (selectedStatusFilter === 'ALL' ? 'active' : '');
-    btnAll.textContent = 'Alles'; btnAll.onclick = function() { setStatusFilter('ALL'); }; container.appendChild(btnAll);
-
-    if (hasOpen || hasPartSold) {
-      var btnOpen = document.createElement('button'); btnOpen.className = 'filter-btn ' + (selectedStatusFilter === 'OPEN' ? 'active' : '');
-      btnOpen.textContent = 'Openstaand'; btnOpen.onclick = function() { setStatusFilter('OPEN'); }; container.appendChild(btnOpen);
-    }
-    if (hasPartSold) {
-      var btnPart = document.createElement('button'); btnPart.className = 'filter-btn ' + (selectedStatusFilter === 'PARTSOLD' ? 'active' : '');
-      btnPart.textContent = 'Deels verkocht'; btnPart.onclick = function() { setStatusFilter('PARTSOLD'); }; container.appendChild(btnPart);
-    }
-    if (hasSold) {
-      var btnSold = document.createElement('button'); btnSold.className = 'filter-btn ' + (selectedStatusFilter === 'SOLD' ? 'active' : '');
-      btnSold.textContent = 'Verkocht'; btnSold.onclick = function() { setStatusFilter('SOLD'); }; container.appendChild(btnSold);
-    }
-  }
-
-  function renderExchangeFilters() {
-    var filterBar = document.getElementById('exchangeFilters'); if (!filterBar) return; filterBar.innerHTML = '';
-    var exchanges = [];
-    for (var i = 0; i < purchases.length; i++) { var ex = purchases[i].exchange.trim(); if (ex && exchanges.indexOf(ex) === -1) exchanges.push(ex); }
-    var allBtn = document.createElement('button');
-    allBtn.className = 'filter-btn ' + (selectedExchangeFilter === 'ALL' ? 'active' : '');
-    allBtn.textContent = 'Alle Exchanges'; allBtn.onclick = function() { setExchangeFilter('ALL'); }; filterBar.appendChild(allBtn);
-    exchanges.forEach(function(ex) {
-      var btn = document.createElement('button');
-      btn.className = 'filter-btn ' + (selectedExchangeFilter === ex ? 'active' : '');
-      btn.textContent = ex; btn.onclick = function() { setExchangeFilter(ex); }; filterBar.appendChild(btn);
+      container.appendChild(card);
     });
+
+    updateFuturesSummary(futures.filter(function(f) { return !f.isClosed; }));
   }
 
-  function renderFilters() {
-    var filterSection = document.getElementById('filterSection'); if (!filterSection) return;
-    if (purchases.length === 0) { filterSection.style.display = 'none'; return; }
-    filterSection.style.display = 'flex';
-    renderStatusFilters(); renderExchangeFilters();
-  }
+  function updateFuturesSummary(openFuturesList) {
+    var list = openFuturesList || futures.filter(function(f) { return !f.isClosed; });
+    var totalMargin = 0;
+    var totalValue = 0;
+    var totalProfit = 0;
+    var totalLeverageWeight = 0;
 
-  function getFilteredPurchases() {
-    return purchases.filter(function(p) {
-      var matchEx = (selectedExchangeFilter === 'ALL' || p.exchange.trim() === selectedExchangeFilter);
-      var matchSt = true;
-      if (selectedStatusFilter === 'OPEN') matchSt = !p.isSold;
-      else if (selectedStatusFilter === 'PARTSOLD') matchSt = !p.isSold && p.partiallySold;
-      else if (selectedStatusFilter === 'SOLD') matchSt = p.isSold;
-      return matchEx && matchSt;
+    list.forEach(function(f) {
+      var binanceSym = getBinanceFuturesSymbol(f.symbol);
+      var curPrice = binanceFuturesPrices[binanceSym] !== undefined ? binanceFuturesPrices[binanceSym] : f.entryPrice;
+      var priceDiff = (f.type === 'LONG') ? (curPrice - f.entryPrice) : (f.entryPrice - curPrice);
+      var pnl = priceDiff * f.amount;
+      var posValue = f.amount * curPrice;
+
+      totalMargin += f.margin;
+      totalValue += posValue;
+      totalProfit += pnl;
+      totalLeverageWeight += (f.leverage * f.margin);
     });
+
+    var avgLev = totalMargin > 0 ? (totalLeverageWeight / totalMargin) : 1;
+
+    var mEl = document.getElementById('futuresTotalMargin'); if (mEl) mEl.textContent = formatUSD(totalMargin);
+    var vEl = document.getElementById('futuresTotalValue'); if (vEl) vEl.textContent = formatUSD(totalValue);
+    var pEl = document.getElementById('futuresTotalProfit');
+    if (pEl) {
+      var sign = totalProfit >= 0 ? '+' : '';
+      pEl.textContent = sign + formatUSD(totalProfit);
+      pEl.className = totalProfit >= 0 ? 'val-profit' : 'val-loss';
+    }
+    var lEl = document.getElementById('futuresAvgLeverage'); if (lEl) lEl.textContent = avgLev.toFixed(1) + 'x';
   }
 
-  // --- TABEL ---
-  function toggleTableStatusFilter(statusKey) { tblSelectedStatuses[statusKey] = !tblSelectedStatuses[statusKey]; renderTableStatusFilters(); renderTable(); updateSummary(); }
-  function setTableExchangeFilter(exchange) { tblSelectedExchangeFilter = exchange; renderTableFilters(); renderTable(); updateSummary(); }
-  function handleTableCoinChange(coin) { tblSelectedCoinFilter = coin; renderTable(); updateSummary(); }
-
-  function renderTableStatusFilters() {
-    var statusContainer = document.getElementById('tableStatusFilters'); if (!statusContainer) return; statusContainer.innerHTML = '';
-    var hasOpen = purchases.some(function(p) { return !p.isSold && !p.partiallySold; });
-    var hasPartSold = purchases.some(function(p) { return !p.isSold && p.partiallySold; });
-    var hasSold = purchases.some(function(p) { return p.isSold; });
-
-    if (hasOpen || hasPartSold) {
-      var btnOpen = document.createElement('button'); btnOpen.className = 'filter-btn ' + (tblSelectedStatuses.OPEN ? 'active' : '');
-      btnOpen.textContent = 'Openstaand'; btnOpen.onclick = function() { toggleTableStatusFilter('OPEN'); }; statusContainer.appendChild(btnOpen);
-    }
-    if (hasPartSold) {
-      var btnPart = document.createElement('button'); btnPart.className = 'filter-btn ' + (tblSelectedStatuses.PARTSOLD ? 'active' : '');
-      btnPart.textContent = 'Deels verkocht'; btnPart.onclick = function() { toggleTableStatusFilter('PARTSOLD'); }; statusContainer.appendChild(btnPart);
-    }
-    if (hasSold) {
-      var btnSold = document.createElement('button'); btnSold.className = 'filter-btn ' + (tblSelectedStatuses.SOLD ? 'active' : '');
-      btnSold.textContent = 'Verkocht'; btnSold.onclick = function() { toggleTableStatusFilter('SOLD'); }; statusContainer.appendChild(btnSold);
-    }
-  }
-
-  function renderTableFilters() {
-    renderTableStatusFilters();
-    var exBar = document.getElementById('tableExchangeFilters'); var coinSelect = document.getElementById('tableCoinSelect');
-    if (!exBar || !coinSelect) return;
-    exBar.innerHTML = '';
-    var exchanges = []; var coins = [];
-    for (var i = 0; i < purchases.length; i++) {
-      var ex = purchases[i].exchange.trim(); if (ex && exchanges.indexOf(ex) === -1) exchanges.push(ex);
-      var c = purchases[i].symbol.trim().toUpperCase(); if (c && coins.indexOf(c) === -1) coins.push(c);
-    }
-    var allExBtn = document.createElement('button');
-    allExBtn.className = 'filter-btn ' + (tblSelectedExchangeFilter === 'ALL' ? 'active' : '');
-    allExBtn.textContent = 'Alle Exchanges'; allExBtn.onclick = function() { setTableExchangeFilter('ALL'); }; exBar.appendChild(allExBtn);
-    exchanges.forEach(function(ex) {
-      var btn = document.createElement('button');
-      btn.className = 'filter-btn ' + (tblSelectedExchangeFilter === ex ? 'active' : '');
-      btn.textContent = ex; btn.onclick = function() { setTableExchangeFilter(ex); }; exBar.appendChild(btn);
-    });
-    coinSelect.innerHTML = '<option value="ALL">Alle Munten</option>';
-    coins.sort().forEach(function(coin) {
-      var opt = document.createElement('option');
-      opt.value = coin; opt.textContent = coin;
-      if (tblSelectedCoinFilter === coin) opt.selected = true;
-      coinSelect.appendChild(opt);
-    });
-  }
-
-  function getTableFilteredPurchases() {
-    return purchases.filter(function(p) {
-      var matchSt = false;
-      if (p.isSold && tblSelectedStatuses.SOLD) matchSt = true;
-      else if (!p.isSold && p.partiallySold && tblSelectedStatuses.PARTSOLD) matchSt = true;
-      else if (!p.isSold && !p.partiallySold && tblSelectedStatuses.OPEN) matchSt = true;
-      var matchEx = (tblSelectedExchangeFilter === 'ALL' || p.exchange.trim() === tblSelectedExchangeFilter);
-      var matchCoin = (tblSelectedCoinFilter === 'ALL' || p.symbol.trim().toUpperCase() === tblSelectedCoinFilter);
-      return matchSt && matchEx && matchCoin;
-    });
-  }
-
+  // --- SPOT OVERZICHT & CARDS ---
   function updateSummary() {
-    var visible = (currentView === 'table') ? getTableFilteredPurchases() : getFilteredPurchases();
+    var tableViewContainer = document.getElementById('tableViewContainer');
+    var visible = (tableViewContainer && tableViewContainer.style.display === 'flex') ? getTableFilteredPurchases() : getFilteredPurchases();
+    
     var totalCost = 0; var totalCurrent = 0; var unrealizedDiff = 0; var unrealizedCost = 0; var realizedDiff = 0; var realizedCost = 0;
 
     for (var i = 0; i < visible.length; i++) {
@@ -1663,24 +1329,23 @@
 
     var uPerc = unrealizedCost > 0 ? (unrealizedDiff / unrealizedCost) * 100 : 0;
     var rPerc = realizedCost > 0 ? (realizedDiff / realizedCost) * 100 : 0;
+    
+    var headerTitle = document.getElementById('summaryHeaderTitle');
     var ind = document.getElementById('filterIndicator');
-    if (ind) {
-      var lbl = '';
-      if (currentView === 'table') {
-        lbl = tblSelectedExchangeFilter === 'ALL' ? 'Alles' : tblSelectedExchangeFilter;
-        var activeStatuses = [];
-        if (tblSelectedStatuses.OPEN) activeStatuses.push('Open');
-        if (tblSelectedStatuses.PARTSOLD) activeStatuses.push('Deels');
-        if (tblSelectedStatuses.SOLD) activeStatuses.push('Verkocht');
-        if (activeStatuses.length > 0 && activeStatuses.length < 3) lbl += ' (' + activeStatuses.join(', ') + ')';
-        if (tblSelectedCoinFilter !== 'ALL') lbl += ' • ' + tblSelectedCoinFilter;
+    
+    if (headerTitle && ind) {
+      if (tableViewContainer && tableViewContainer.style.display === 'flex') {
+        var coinLbl = tblSelectedCoinFilter !== 'ALL' ? 'Munt: ' + tblSelectedCoinFilter : 'Tabel Overzicht';
+        headerTitle.textContent = coinLbl;
+        ind.textContent = tblSelectedCoinFilter !== 'ALL' ? tblSelectedCoinFilter : 'Tabel';
+      } else if (activeCoinFilter) {
+        var exText = coinDetailExchangeFilter !== 'ALL' ? ' (' + coinDetailExchangeFilter + ')' : '';
+        headerTitle.textContent = 'Munt: ' + activeCoinFilter + exText;
+        ind.textContent = activeCoinFilter;
       } else {
-        lbl = selectedExchangeFilter === 'ALL' ? 'Alles' : selectedExchangeFilter;
-        if (selectedStatusFilter === 'OPEN') lbl += ' (Open)';
-        if (selectedStatusFilter === 'PARTSOLD') lbl += ' (Deels verkocht)';
-        if (selectedStatusFilter === 'SOLD') lbl += ' (Verkocht)';
+        headerTitle.textContent = 'Mijn Spot Portefeuille';
+        ind.textContent = 'Alles';
       }
-      ind.textContent = lbl;
     }
 
     var cEl = document.getElementById('totalCost'); if (cEl) cEl.textContent = formatEUR(totalCost);
@@ -1701,14 +1366,78 @@
 
   function renderCards() {
     var container = document.getElementById('cardsContainer'); if (!container) return; container.innerHTML = '';
-    var visible = getFilteredPurchases();
-
+    var subNav = document.getElementById('subScreenNav');
+    var coinFilters = document.getElementById('coinDetailFilters');
+    var subTitle = document.getElementById('subScreenTitle');
+    
     if (purchases.length === 0) {
-      container.innerHTML = '<div class="empty-state">Nog geen aankopen ingevoerd. Klik op "+ Aankoop" om te beginnen.</div>';
+      if (subNav) subNav.style.display = 'none';
+      if (coinFilters) coinFilters.style.display = 'none';
+      container.innerHTML = '<div class="empty-state">Nog geen spot aankoop ingevoerd. Klik op "+ Spot Aankoop" om te beginnen.</div>';
       updateSummary(); return;
     }
+
+    if (activeCoinFilter === null) {
+      if (subNav) subNav.style.display = 'none';
+      if (coinFilters) coinFilters.style.display = 'none';
+
+      var aggregated = {};
+      purchases.forEach(function(p) {
+        if (p.isSold) return; 
+        var sym = p.symbol.trim().toUpperCase();
+        if (!aggregated[sym]) { aggregated[sym] = { symbol: sym, totalAmount: 0, totalCost: 0 }; }
+        var aankoopBedrag = p.amount * p.price;
+        aggregated[sym].totalCost += aankoopBedrag;
+        aggregated[sym].totalAmount += p.amount;
+      });
+
+      var symbols = Object.keys(aggregated);
+      if (symbols.length === 0) {
+        container.innerHTML = '<div class="empty-state">Geen openstaande spot posities in portefeuille.</div>';
+        updateSummary(); return;
+      }
+
+      symbols.sort().forEach(function(sym) {
+        var agg = aggregated[sym];
+        var avgPrice = agg.totalAmount > 0 ? agg.totalCost / agg.totalAmount : 0;
+        var curP = livePrices[sym] !== undefined ? livePrices[sym] : avgPrice;
+        var curVal = agg.totalAmount * curP;
+        var diff = curVal - agg.totalCost;
+        var perc = agg.totalCost > 0 ? (diff / agg.totalCost) * 100 : 0;
+        var sign = diff >= 0 ? '+' : '';
+        var color = diff >= 0 ? 'val-profit' : 'val-loss';
+
+        var card = document.createElement('div');
+        card.className = 'crypto-card clickable-card';
+        card.onclick = function() { selectCoinFromHome(sym); };
+
+        card.innerHTML = '<div class="card-header">' +
+            '<div class="coin-group"><div class="coin-badge">' + sym + '</div> <span class="badge-status open">Totaal Overzicht</span></div>' +
+            '<div class="meta-info">Klik voor transacties →</div>' +
+          '</div>' +
+          '<div class="purchase-details">Totaal aantal: <strong>' + formatAantal(agg.totalAmount) + '</strong> stuks | Gem. Inkoop: <strong>' + formatKoers(avgPrice, 'EUR') + '</strong></div>' +
+          '<div class="card-divider"></div>' +
+          '<div class="metrics-grid">' +
+            '<div class="metric-col"><span>Inleg</span><strong>' + formatEUR(agg.totalCost) + '</strong></div>' +
+            '<div class="metric-col"><span>Huidige Koers</span><strong>' + formatKoers(curP, 'EUR') + '</strong></div>' +
+            '<div class="metric-col"><span>Waarde</span><strong>' + formatEUR(curVal) + '</strong></div>' +
+            '<div class="metric-col"><span>Resultaat</span><strong class="' + color + '">' + sign + formatEUR(diff) + ' (' + sign + perc.toFixed(1) + '%)</strong></div>' +
+          '</div>';
+
+        container.appendChild(card);
+      });
+
+      updateSummary();
+      return;
+    }
+
+    if (subNav) subNav.style.display = 'flex';
+    if (coinFilters) coinFilters.style.display = 'flex';
+    if (subTitle) subTitle.textContent = activeCoinFilter;
+
+    var visible = getFilteredPurchases();
     if (visible.length === 0) {
-      container.innerHTML = '<div class="empty-state">Geen posities gevonden voor de huidige selectie.</div>';
+      container.innerHTML = '<div class="empty-state">Geen posities gevonden voor ' + activeCoinFilter + ' met deze filters.</div>';
       updateSummary(); return;
     }
 
@@ -1728,8 +1457,8 @@
         detailsHTML = formatAantal(p.amount) + ' stuks | Inleg: <strong>' + formatEUR(totalCost) + '</strong>';
 
         metricsHTML = '<div class="metrics-grid">' +
-          '<div class="metric-col"><span>Aankoopkoers</span><strong>' + formatKoers(p.price) + '</strong></div>' +
-          '<div class="metric-col"><span>Verkoopkoers</span><strong>' + formatKoers(p.sellPrice) + '</strong></div>' +
+          '<div class="metric-col"><span>Aankoopkoers</span><strong>' + formatKoers(p.price, 'EUR') + '</strong></div>' +
+          '<div class="metric-col"><span>Verkoopkoers</span><strong>' + formatKoers(p.sellPrice, 'EUR') + '</strong></div>' +
           '<div class="metric-col"><span>Opbrengst</span><strong>' + formatEUR(totalYield) + '</strong></div>' +
           '<div class="metric-col"><span>W/V</span><strong class="' + color + '">' + sign + formatEUR(diff) + ' (' + sign + perc.toFixed(1) + '%)</strong></div>' +
         '</div>';
@@ -1753,19 +1482,19 @@
           var perc = totalCost > 0 ? (diff / totalCost) * 100 : 0;
           var sign = diff >= 0 ? '+' : ''; var color = diff >= 0 ? 'val-profit' : 'val-loss';
           metricsHTML = '<div class="metrics-grid">' +
-            '<div class="metric-col"><span>Aankoopkoers</span><strong>' + formatKoers(p.price) + '</strong></div>' +
-            '<div class="metric-col"><span>Koers</span><strong>' + formatKoers(curP) + '</strong></div>' +
+            '<div class="metric-col"><span>Aankoopkoers</span><strong>' + formatKoers(p.price, 'EUR') + '</strong></div>' +
+            '<div class="metric-col"><span>Koers</span><strong>' + formatKoers(curP, 'EUR') + '</strong></div>' +
             '<div class="metric-col"><span>Waarde</span><strong>' + formatEUR(curV) + '</strong></div>' +
             '<div class="metric-col"><span>Ongerealiseerd</span><strong class="' + color + '">' + sign + formatEUR(diff) + ' (' + sign + perc.toFixed(1) + '%)</strong></div>' +
           '</div>';
         } else {
           metricsHTML = '<div class="metrics-grid">' +
-            '<div class="metric-col"><span>Aankoopkoers</span><strong>' + formatKoers(p.price) + '</strong></div>' +
+            '<div class="metric-col"><span>Aankoopkoers</span><strong>' + formatKoers(p.price, 'EUR') + '</strong></div>' +
             '<div class="metric-col" style="grid-column: span 3; color: var(--text-muted); font-size: 0.8rem; padding-top: 4px;">Koers laden...</div>' +
           '</div>';
         }
 
-        actionButtons = '<button class="btn-action chart-action" onclick="openChartTab(\'' + p.symbol + '\')">📊 Grafiek</button>' +
+        actionButtons = '<button class="btn-action chart-action" onclick="openChartTab(\'' + p.symbol + '\', \'portfolio\')">📊 Grafiek</button>' +
                         '<button class="btn-action sold-action" onclick="openSellDialog(' + p.id + ')">Verkocht</button>' +
                         '<button class="btn-action" onclick="editPurchase(' + p.id + ')">Bewerken</button>' +
                         '<button class="btn-action delete" onclick="deletePurchase(' + p.id + ')">Verwijderen</button>';
@@ -1785,13 +1514,73 @@
     updateSummary();
   }
 
+  function getFilteredPurchases() {
+    return purchases.filter(function(p) {
+      var matchCoin = (activeCoinFilter === null || p.symbol.trim().toUpperCase() === activeCoinFilter);
+      var matchEx = (coinDetailExchangeFilter === 'ALL' || p.exchange.trim().toLowerCase() === coinDetailExchangeFilter.toLowerCase());
+      var matchSt = true;
+      if (selectedStatusFilter === 'OPEN') matchSt = !p.isSold;
+      else if (selectedStatusFilter === 'PARTSOLD') matchSt = !p.isSold && p.partiallySold;
+      else if (selectedStatusFilter === 'SOLD') matchSt = p.isSold;
+      return matchCoin && matchEx && matchSt;
+    });
+  }
+
+  function selectCoinFromHome(symbol) {
+    activeCoinFilter = symbol;
+    selectedStatusFilter = 'ALL';
+    coinDetailExchangeFilter = 'ALL';
+    renderCoinDetailFilters();
+    renderCards();
+  }
+
+  function returnToAggregatedHome() {
+    activeCoinFilter = null;
+    coinDetailExchangeFilter = 'ALL';
+    selectedStatusFilter = 'ALL';
+    renderCards();
+  }
+
+  function showAllTransactions() {
+    activeCoinFilter = null;
+    coinDetailExchangeFilter = 'ALL';
+    selectedStatusFilter = 'ALL';
+    renderCards();
+  }
+
+  function setCoinStatusFilter(status) {
+    selectedStatusFilter = status;
+    renderCards();
+  }
+
+  function setCoinExchangeFilter(exchange) {
+    coinDetailExchangeFilter = exchange;
+    renderCards();
+  }
+
+  function renderCoinDetailFilters() {
+    var statusSelect = document.getElementById('coinStatusSelect');
+    var exchangeSelect = document.getElementById('coinExchangeSelect');
+    if (!statusSelect || !exchangeSelect) return;
+    statusSelect.value = selectedStatusFilter;
+    exchangeSelect.innerHTML = '';
+    var allEx = ['ALL'].concat(getAllExchanges());
+    allEx.forEach(function(ex) {
+      var opt = document.createElement('option');
+      opt.value = ex;
+      opt.textContent = ex === 'ALL' ? 'Alle Exchanges' : ex;
+      if (coinDetailExchangeFilter === ex) opt.selected = true;
+      exchangeSelect.appendChild(opt);
+    });
+  }
+
   function renderTable() {
     var tbody = document.getElementById('tableBody'); var tfoot = document.getElementById('tableFoot');
     if (!tbody || !tfoot) return; tbody.innerHTML = ''; tfoot.innerHTML = '';
     var filtered = getTableFilteredPurchases();
 
-    if (purchases.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--text-muted);">Nog geen transacties beschikbaar.</td></tr>'; return; }
-    if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--text-muted);">Geen transacties gevonden voor de gekozen filters.</td></tr>'; return; }
+    if (purchases.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--text-muted);">Nog geen transacties beschikbaar.</td></tr>'; updateSummary(); return; }
+    if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--text-muted);">Geen transacties gevonden voor de gekozen filters.</td></tr>'; updateSummary(); return; }
 
     var sorted = filtered.slice().sort(function(a, b) {
       var dateA = (a.isSold && a.sellDate) ? a.sellDate : a.date;
@@ -1852,11 +1641,136 @@
         '<td>' + formatEUR(totalOpenCost) + '</td>' + '<td>-</td>' + '<td>' + totalUnrealizedHtml + '</td>';
       tfoot.appendChild(footTr);
     }
+    updateSummary();
   }
 
-  // Opstartcyclus en Service Worker
+  function getTableFilteredPurchases() {
+    return purchases.filter(function(p) {
+      var matchSt = false;
+      if (p.isSold && tblSelectedStatuses.SOLD) matchSt = true;
+      else if (!p.isSold && p.partiallySold && tblSelectedStatuses.PARTSOLD) matchSt = true;
+      else if (!p.isSold && !p.partiallySold && tblSelectedStatuses.OPEN) matchSt = true;
+      var matchEx = (tblSelectedExchangeFilter === 'ALL' || p.exchange.trim() === tblSelectedExchangeFilter);
+      var matchCoin = (tblSelectedCoinFilter === 'ALL' || p.symbol.trim().toUpperCase() === tblSelectedCoinFilter);
+      return matchSt && matchEx && matchCoin;
+    });
+  }
+
+  function renderTableFilters() {
+    renderTableStatusFilters();
+    var exBar = document.getElementById('tableExchangeFilters'); var coinSelect = document.getElementById('tableCoinSelect');
+    if (!exBar || !coinSelect) return;
+    exBar.innerHTML = '';
+    var exchanges = []; var coins = [];
+    for (var i = 0; i < purchases.length; i++) {
+      var ex = purchases[i].exchange.trim(); if (ex && exchanges.indexOf(ex) === -1) exchanges.push(ex);
+      var c = purchases[i].symbol.trim().toUpperCase(); if (c && coins.indexOf(c) === -1) coins.push(c);
+    }
+    var allExBtn = document.createElement('button');
+    allExBtn.className = 'filter-btn ' + (tblSelectedExchangeFilter === 'ALL' ? 'active' : '');
+    allExBtn.textContent = 'Alle Exchanges'; allExBtn.onclick = function() { setTableExchangeFilter('ALL'); }; exBar.appendChild(allExBtn);
+    exchanges.forEach(function(ex) {
+      var btn = document.createElement('button');
+      btn.className = 'filter-btn ' + (tblSelectedExchangeFilter === ex ? 'active' : '');
+      btn.textContent = ex; btn.onclick = function() { setTableExchangeFilter(ex); }; exBar.appendChild(btn);
+    });
+    coinSelect.innerHTML = '<option value="ALL">Alle Munten</option>';
+    coins.sort().forEach(function(coin) {
+      var opt = document.createElement('option');
+      opt.value = coin; opt.textContent = coin;
+      if (tblSelectedCoinFilter === coin) opt.selected = true;
+      coinSelect.appendChild(opt);
+    });
+  }
+
+  function toggleTableStatusFilter(statusKey) { tblSelectedStatuses[statusKey] = !tblSelectedStatuses[statusKey]; renderTableStatusFilters(); renderTable(); }
+  function setTableExchangeFilter(exchange) { tblSelectedExchangeFilter = exchange; renderTableFilters(); renderTable(); }
+  function handleTableCoinChange(coin) { tblSelectedCoinFilter = coin; renderTable(); }
+
+  // Spot Koersen ophalen
+  function fetchLivePrices() {
+    var openSymbols = [];
+    for (var i = 0; i < purchases.length; i++) {
+      if (!purchases[i].isSold) {
+        var s = purchases[i].symbol.trim().toUpperCase();
+        if (openSymbols.indexOf(s) === -1) openSymbols.push(s);
+      }
+    }
+    if (openSymbols.length === 0) { updateStatusDisplay(); updateSummary(); return; }
+
+    fetch('https://api.binance.com/api/v3/ticker/price?symbol=EURUSDT')
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(eurData) {
+        var eurUsdtRate = eurData ? parseFloat(eurData.price) : 1.08;
+        var promises = openSymbols.map(function(sym) {
+          return fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'EUR')
+            .then(function(r) { if (r.ok) return r.json(); throw new Error('Geen EUR'); })
+            .then(function(d) { if (d && d.price) livePrices[sym] = parseFloat(d.price); })
+            .catch(function() {
+              return fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'USDT')
+                .then(function(r2) { return r2.ok ? r2.json() : null; })
+                .then(function(usdtData) { if (usdtData && usdtData.price) livePrices[sym] = parseFloat(usdtData.price) / eurUsdtRate; })
+                .catch(function() {});
+            });
+        });
+        return Promise.all(promises);
+      })
+      .then(function() {
+        lastUpdatedTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        renderCards(); renderTable(); updateSummary(); checkProfitTargets(); secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS; updateStatusDisplay();
+      });
+  }
+
+  function checkProfitTargets() {
+    purchases.forEach(function(p) {
+      if (p.isSold) return;
+      var targetPct = parseFloat(p.profitTargetPct) || 0;
+      if (targetPct <= 0) return;
+      var curP = livePrices[p.symbol];
+      if (curP === undefined) return;
+
+      var currentPct = ((curP - p.price) / p.price) * 100;
+      if (currentPct >= targetPct && !p.notified) {
+        p.notified = true;
+        saveToCloud();
+        alert("🎯 Winstdoel bereikt voor " + p.symbol + " (" + p.exchange + ")! Rendement: +" + currentPct.toFixed(1) + "%");
+      }
+    });
+  }
+
+  function manualRefresh() {
+    secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS;
+    fetchLivePrices();
+    fetchBinanceFuturesPrices();
+  }
+
+  function updateStatusDisplay() {
+    var statusMsg = document.getElementById('statusMessage'); if (!statusMsg) return;
+    if (purchases.length === 0) { statusMsg.textContent = 'Geen data'; return; }
+    var openCount = purchases.filter(function(p) { return !p.isSold; }).length;
+    if (openCount === 0) { statusMsg.textContent = 'Alles verkocht'; return; }
+    if (lastUpdatedTime) statusMsg.textContent = 'Bijgewerkt: ' + lastUpdatedTime + ' (' + secondsUntilNextRefresh + 's)';
+    else statusMsg.textContent = 'Klaar (' + secondsUntilNextRefresh + 's)';
+  }
+
+  function startAutoRefreshTimer() {
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdownTimer = setInterval(function() {
+      secondsUntilNextRefresh--;
+      if (secondsUntilNextRefresh <= 0) {
+        secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS;
+        fetchLivePrices();
+        fetchBinanceFuturesPrices();
+      } else {
+        updateStatusDisplay();
+      }
+    }, 1000);
+  }
+
+  // Opstartcyclus en Service Worker (30s auto-refresh)
   window.addEventListener('DOMContentLoaded', function() {
     var dt = document.getElementById('date'); if (dt) dt.value = new Date().toISOString().split('T')[0];
+    var fdt = document.getElementById('futDate'); if (fdt) fdt.value = new Date().toISOString().split('T')[0];
     var sdt = document.getElementById('sellDate'); if (sdt) sdt.value = new Date().toISOString().split('T')[0];
 
     loadCloudData();

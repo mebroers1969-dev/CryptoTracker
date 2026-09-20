@@ -387,6 +387,7 @@
     <div class="summary-controls">
       <div class="summary-btn-group">
         <button class="btn-primary" onclick="openAddForm()">+ Spot Aankoop</button>
+        <button class="btn-secondary" onclick="manualRefresh()">🔄 Koersen Verversen</button>
       </div>
       <span id="statusMessage">Klaar</span>
     </div>
@@ -699,7 +700,7 @@
   </div>
 
   <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.1.5 (Cloud Laad Fix)</span>
+    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.1.6 (Direct Laden & Ververs-knop)</span>
   </div>
 </div>
 
@@ -783,8 +784,11 @@
       renderFuturesCards();
       renderTableFilters();
       renderTable();
+      
+      // DIRECT koersen ophalen bij opstarten
       fetchLivePrices();
       fetchBinanceFuturesPrices();
+
       if (statusMsg) statusMsg.textContent = 'Klaar';
     }).catch(function(error) {
       console.error("Fout bij laden van cloud:", error);
@@ -1727,6 +1731,196 @@
   function setTableExchangeFilter(exchange) { tblSelectedExchangeFilter = exchange; renderTableFilters(); renderTable(); }
   function handleTableCoinChange(coin) { tblSelectedCoinFilter = coin; renderTable(); }
 
+  // --- ANALYSE & TECHNISCHE INDICATOREN (Spot Binance Klines) ---
+  function setAnalysisInterval(interval, btnElement) {
+    currentAnalysisInterval = interval;
+    var container = document.getElementById('analysisIntervalFilters');
+    if (container) {
+      var btns = container.getElementsByClassName('filter-btn');
+      for (var i = 0; i < btns.length; i++) { btns[i].classList.remove('active'); }
+    }
+    if (btnElement) btnElement.classList.add('active');
+    loadBatchAnalysis();
+  }
+
+  function loadBatchAnalysis() {
+    var statusMsg = document.getElementById('analysisStatusMsg');
+    var container = document.getElementById('analysisListContainer');
+    if (!container) return;
+
+    var openCoins = [];
+    for (var i = 0; i < purchases.length; i++) {
+      if (!purchases[i].isSold) {
+        var sym = purchases[i].symbol.trim().toUpperCase();
+        if (openCoins.indexOf(sym) === -1) openCoins.push(sym);
+      }
+    }
+
+    if (openCoins.length === 0) {
+      container.innerHTML = '<div class="empty-state">Geen openstaande munten in de portefeuille om te analyseren.</div>';
+      if (statusMsg) statusMsg.textContent = 'Klaar';
+      return;
+    }
+
+    if (statusMsg) statusMsg.textContent = 'Marktdata ophalen (' + currentAnalysisInterval + ') voor ' + openCoins.length + ' munten...';
+    container.innerHTML = '<div style="text-align:center; padding: 30px; color: var(--text-muted);">Technische indicatoren berekenen...</div>';
+
+    var promises = openCoins.map(function(sym) {
+      return fetch('https://api.binance.com/api/v3/klines?symbol=' + sym + 'USDT&interval=' + currentAnalysisInterval + '&limit=100')
+        .then(function(res) { if (!res.ok) throw new Error('Geen data'); return res.json(); })
+        .then(function(data) {
+          var closes = data.map(function(candle) { return parseFloat(candle[4]); });
+          return { symbol: sym, closes: closes, error: false };
+        })
+        .catch(function() { return { symbol: sym, closes: [], error: true }; });
+    });
+
+    Promise.all(promises).then(function(results) {
+      container.innerHTML = '';
+      var timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      if (statusMsg) statusMsg.textContent = 'Laatst bijgewerkt om ' + timeString + ' (' + currentAnalysisInterval + ', ververst elke 10m)';
+
+      results.forEach(function(res) {
+        var card = document.createElement('div');
+        card.className = 'crypto-card';
+        card.style.padding = '10px 14px';
+
+        if (res.error || res.closes.length < 50) {
+          card.innerHTML = '<div class="card-header" style="margin-bottom:0;"><div class="coin-group"><div class="coin-badge">' + res.symbol + '</div></div>' +
+                           '<div class="meta-info" style="color: var(--loss);">Geen USDT-paar of onvoldoende data</div></div>';
+        } else {
+          var closes = res.closes;
+          var currentPrice = closes[closes.length - 1];
+          var rsi = calcRSI(closes, 14);
+
+          var shortPeriod = (currentAnalysisInterval === '15m' || currentAnalysisInterval === '30m') ? 9 : 20;
+          var longPeriod = (currentAnalysisInterval === '15m' || currentAnalysisInterval === '30m') ? 21 : 50;
+
+          var emaShort = calcEMA(closes, shortPeriod);
+          var emaLong = calcEMA(closes, longPeriod);
+
+          var rsiSignal = 'Neutraal'; var rsiColor = '#94a3b8';
+          if (rsi < 30) { rsiSignal = 'Oversold (Kans!)'; rsiColor = 'var(--profit)'; }
+          else if (rsi > 70) { rsiSignal = 'Overbought (Let op!)'; rsiColor = 'var(--loss)'; }
+
+          var emaSignal = 'Zijwaarts'; var emaColor = '#94a3b8';
+          if (emaShort > emaLong && currentPrice > emaShort) { emaSignal = 'Bullish (Stijgend)'; emaColor = 'var(--profit)'; }
+          else if (emaShort < emaLong && currentPrice < emaShort) { emaSignal = 'Bearish (Dalend)'; emaColor = 'var(--loss)'; }
+          else if (emaShort > emaLong && currentPrice < emaShort) { emaSignal = 'Correctie in stijgende trend'; emaColor = '#f59e0b'; }
+
+          var score = 0;
+          if (rsi < 35) score++; else if (rsi > 65) score--;
+          if (emaShort > emaLong) score++; else score--;
+          if (currentPrice > emaShort) score++; else score--;
+
+          var overall = 'HOUDEN / NEUTRAAL'; var ovColor = '#f59e0b';
+          if (score >= 2) { overall = 'KOPEN'; ovColor = 'var(--profit)'; }
+          else if (score <= -2) { overall = 'VERKOPEN / SHORT (Futures)'; ovColor = 'var(--loss)'; }
+
+          card.innerHTML = '<div class="analysis-row-flex">' +
+              '<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">' +
+                '<div style="display: flex; align-items: center; gap: 6px;">' +
+                  '<div class="coin-badge">' + res.symbol + '</div>' +
+                  '<button class="btn-action chart-action" style="padding: 2px 6px; font-size: 0.7rem;" onclick="openChartTabFromAnalysis(\'' + res.symbol + '\')">📊 Grafiek</button>' +
+                '</div>' +
+                '<div class="meta-info">Koers: <strong>$ ' + currentPrice.toFixed(4) + '</strong></div>' +
+                '<div style="font-size: 0.75rem; color: var(--text-muted);">RSI (14): <strong>' + rsi.toFixed(1) + '</strong> <span style="color: ' + rsiColor + ';">(' + rsiSignal + ')</span></div>' +
+                '<div style="font-size: 0.75rem; color: var(--text-muted);">Trend (EMA ' + shortPeriod + '/' + longPeriod + '): <strong style="color: ' + emaColor + ';">' + emaSignal + '</strong></div>' +
+              '</div>' +
+              '<div>' +
+                '<span class="badge-status" style="font-size: 0.7rem; padding: 5px 9px; background-color: rgba(34, 197, 94, 0.15); color: ' + ovColor + '; border: 1px solid ' + ovColor + ';">' + overall + '</span>' +
+              '</div>' +
+            '</div>';
+        }
+        container.appendChild(card);
+      });
+    });
+  }
+
+  function calcRSI(closes, period) {
+    if (closes.length <= period) return 50;
+    let avgGain = 0, avgLoss = 0;
+    for (let i = 1; i <= period; i++) {
+      let diff = closes[i] - closes[i-1];
+      if (diff >= 0) avgGain += diff; else avgLoss -= diff;
+    }
+    avgGain /= period; avgLoss /= period;
+    for (let i = period + 1; i < closes.length; i++) {
+      let diff = closes[i] - closes[i-1];
+      let gain = diff >= 0 ? diff : 0;
+      let loss = diff < 0 ? -diff : 0;
+      avgGain = ((avgGain * (period - 1)) + gain) / period;
+      avgLoss = ((avgLoss * (period - 1)) + loss) / period;
+    }
+    if (avgLoss === 0) return 100;
+    let rs = avgGain / avgLoss;
+    return 100 - (100 / (1 + rs));
+  }
+
+  function calcEMA(closes, period) {
+    if (closes.length < period) return closes[closes.length-1];
+    let k = 2 / (period + 1);
+    let ema = closes[0];
+    for (let i = 1; i < closes.length; i++) {
+      ema = (closes[i] * k) + (ema * (1 - k));
+    }
+    return ema;
+  }
+
+  function openChartTab(symbol, originTab) {
+    openedFromTab = originTab || 'portfolio';
+    switchNavTab('chart');
+    populateChartCoinSelector(symbol);
+    renderTradingViewWidget(symbol);
+  }
+
+  function openChartTabFromAnalysis(symbol) {
+    openChartTab(symbol, 'analysis');
+  }
+
+  function returnFromChart() {
+    if (openedFromTab === 'analysis') {
+      switchNavTab('analysis');
+    } else {
+      switchNavTab('portfolio');
+    }
+  }
+
+  function populateChartCoinSelector(activeSymbol) {
+    var selector = document.getElementById('chartCoinSelector');
+    if (!selector) return;
+    selector.innerHTML = '';
+    var openCoins = [];
+    for (var i = 0; i < purchases.length; i++) {
+      if (!purchases[i].isSold) {
+        var sym = purchases[i].symbol.trim().toUpperCase();
+        if (openCoins.indexOf(sym) === -1) openCoins.push(sym);
+      }
+    }
+    if (openCoins.indexOf('BTC') === -1) openCoins.push('BTC');
+    openCoins.sort().forEach(function(sym) {
+      var opt = document.createElement('option');
+      opt.value = sym; opt.textContent = sym + 'USDT';
+      if (sym === activeSymbol) opt.selected = true;
+      selector.appendChild(opt);
+    });
+  }
+
+  function switchChartCoin(sym) { renderTradingViewWidget(sym); }
+
+  function renderTradingViewWidget(symbol) {
+    var wrapper = document.getElementById('tradingviewWidgetWrapper');
+    if (!wrapper) return;
+    wrapper.innerHTML = '';
+    new TradingView.widget({
+      "width": "100%", "height": "500", "symbol": "BINANCE:" + symbol + "USDT", "interval": "60",
+      "timezone": "Europe/Amsterdam", "theme": "dark", "style": "1", "locale": "nl",
+      "toolbar_bg": "#1e293b", "enable_publishing": false, "hide_side_toolbar": false,
+      "allow_symbol_change": true, "details": true, "hotlist": true, "calendar": false,
+      "studies": ["RSI@tv-basicstudies", "MASimple@tv-basicstudies"], "container_id": "tradingviewWidgetWrapper"
+    });
+  }
+
   function checkProfitTargets() {
     purchases.forEach(function(p) {
       if (p.isSold) return;
@@ -1744,6 +1938,15 @@
     });
   }
 
+  function updateStatusDisplay() {
+    var statusMsg = document.getElementById('statusMessage'); if (!statusMsg) return;
+    if (purchases.length === 0) { statusMsg.textContent = 'Geen data'; return; }
+    var openCount = purchases.filter(function(p) { return !p.isSold; }).length;
+    if (openCount === 0) { statusMsg.textContent = 'Alles verkocht'; return; }
+    if (lastUpdatedTime) statusMsg.textContent = 'Bijgewerkt: ' + lastUpdatedTime + ' (' + secondsUntilNextRefresh + 's)';
+    else statusMsg.textContent = 'Klaar (' + secondsUntilNextRefresh + 's)';
+  }
+
   function startAutoRefreshTimer() {
     if (countdownTimer) clearInterval(countdownTimer);
     countdownTimer = setInterval(function() {
@@ -1753,10 +1956,7 @@
         fetchLivePrices();
         fetchBinanceFuturesPrices();
       } else {
-        var statusMsg = document.getElementById('statusMessage');
-        if (statusMsg && purchases.length > 0) {
-          statusMsg.textContent = 'Bijgewerkt (' + secondsUntilNextRefresh + 's)';
-        }
+        updateStatusDisplay();
       }
     }, 1000);
   }

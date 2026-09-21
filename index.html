@@ -13,7 +13,6 @@
   
   <link rel="manifest" href="manifest.json">
 
-  <!-- PWA: manifest.json en sw.js staan naast index.html; geschikt voor GitHub Pages -->
   <!-- Firebase App (v10 CDN Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <!-- Firebase Firestore -->
@@ -345,7 +344,7 @@
     .empty-state { text-align: center; padding: 30px 16px; color: var(--text-muted); border: 2px dashed var(--card-border); border-radius: 12px; font-size: 0.9rem; }
 
     /* Tabelweergave Stijlen (Geoptimaliseerd voor mobiel) */
-    #tableViewContainer { display: none; flex-direction: column; gap: 12px; width: 100%; }
+    #tableViewContainer, #futuresTableViewContainer { display: none; flex-direction: column; gap: 12px; width: 100%; }
     .table-card { 
       background-color: var(--card-bg); 
       border: 1px solid var(--card-border); 
@@ -403,7 +402,7 @@
     #fallbackFileInput { display: none; }
 
     @media (max-width: 600px) {
-      body { padding: 8px; padding-bottom: 80px; }
+      body { padding: 8px; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
       .summary-card { padding: 12px; top: 4px; }
       .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
       .form-grid { grid-template-columns: 1fr; gap: 12px; }
@@ -494,24 +493,63 @@
     <div id="cardsContainer" class="cards-list"></div>
   </div>
 
-  <!-- Binance Futures Scherm -->
+  <!-- Binance Futures Scherm (Kaarten) -->
   <div id="futuresView">
     <div class="filter-section" id="futuresFilterSection">
-      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-        <select id="futuresStatusSelect" class="filter-select" onchange="renderFuturesCards()">
-          <option value="ALL">Alle Futures (Open & Gesloten)</option>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <select id="futuresStatusSelect" class="filter-select" onchange="renderFuturesCards()">
+            <option value="ALL">Alle Futures (Open & Gesloten)</option>
+            <option value="OPEN" selected>Alleen Open</option>
+            <option value="CLOSED">Alleen Gesloten</option>
+          </select>
+          <select id="futuresTypeSelect" class="filter-select" onchange="renderFuturesCards()">
+            <option value="ALL">Long & Short</option>
+            <option value="LONG">Alleen Long</option>
+            <option value="SHORT">Alleen Short</option>
+          </select>
+        </div>
+        <button class="btn-secondary" onclick="switchToFuturesTable()">📋 Tabel Weergave</button>
+      </div>
+    </div>
+
+    <div id="futuresCardsContainer" class="cards-list"></div>
+  </div>
+
+  <!-- Binance Futures Tabelweergave -->
+  <div id="futuresTableViewContainer">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: #c084fc;">Futures Transactie Tabel</h3>
+      <button class="btn-secondary" onclick="switchToFuturesCards()">← Terug naar Kaarten</button>
+    </div>
+    <div class="filter-section">
+      <div class="filter-bar" style="flex-wrap: wrap; gap: 8px;">
+        <select id="tableFuturesStatusSelect" class="filter-select" onchange="renderFuturesTable()">
+          <option value="ALL">Alle Statussen</option>
           <option value="OPEN" selected>Alleen Open</option>
           <option value="CLOSED">Alleen Gesloten</option>
         </select>
-        <select id="futuresTypeSelect" class="filter-select" onchange="renderFuturesCards()">
+        <select id="tableFuturesTypeSelect" class="filter-select" onchange="renderFuturesTable()">
           <option value="ALL">Long & Short</option>
           <option value="LONG">Alleen Long</option>
           <option value="SHORT">Alleen Short</option>
         </select>
       </div>
     </div>
-
-    <div id="futuresCardsContainer" class="cards-list"></div>
+    <div class="table-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Munt</th>
+            <th>Margin</th>
+            <th>Instap / Sluit</th>
+            <th>Resultaat</th>
+          </tr>
+        </thead>
+        <tbody id="futuresTableBody"></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Tabelweergave Spot -->
@@ -525,6 +563,12 @@
         <div id="tableExchangeFilters" style="display: flex; gap: 6px; overflow-x: auto;"></div>
         <select id="tableCoinSelect" class="filter-select" onchange="handleTableCoinChange(this.value)">
           <option value="ALL">Alle Munten</option>
+        </select>
+        <select id="tableStatusSelect" class="filter-select" onchange="handleTableStatusChange(this.value)">
+          <option value="ALL">Alle Statussen</option>
+          <option value="OPEN">Open</option>
+          <option value="PARTSOLD">Deels verkocht</option>
+          <option value="SOLD">Verkocht</option>
         </select>
       </div>
     </div>
@@ -722,7 +766,7 @@
         <h3 id="chartPageTitle" style="font-size: 1.05rem; font-weight: 700; color: #38bdf8;">Grafiek</h3>
         <select id="chartCoinSelector" class="filter-select" onchange="switchChartCoin(this.value)" style="padding: 4px 10px; font-size: 0.75rem;"></select>
       </div>
-      <button class="btn-secondary" onclick="switchNavTab('menu')">← Terug naar Menu</button>
+      <button class="btn-secondary" onclick="returnFromChart()">← Terug</button>
     </div>
     <div class="tradingview-container" id="tradingviewWidgetWrapper"></div>
   </div>
@@ -752,7 +796,7 @@
   </div>
 
   <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.4.5 (Delete & Fetch Fixed)</span>
+    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.7.0 (Futures Table Added)</span>
   </div>
 </div>
 
@@ -834,6 +878,7 @@
       autoReconcilePartiallySold();
       renderCards();
       renderFuturesCards();
+      renderFuturesTable();
       renderTableFilters();
       renderTable();
       
@@ -886,6 +931,7 @@
   var tblSelectedStatuses = { OPEN: true, PARTSOLD: true, SOLD: true };
   var tblSelectedExchangeFilter = 'ALL';
   var tblSelectedCoinFilter = 'ALL';
+  var tblSelectedStatusFilter = 'ALL';
 
   var REFRESH_INTERVAL_SECONDS = 30;
   var secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS;
@@ -921,6 +967,7 @@
     currentActiveTab = tabName;
     var portfolioView = document.getElementById('portfolioView');
     var futuresView = document.getElementById('futuresView');
+    var futuresTableViewContainer = document.getElementById('futuresTableViewContainer');
     var tableViewContainer = document.getElementById('tableViewContainer');
     var filterSection = document.getElementById('filterSection');
     var analysisView = document.getElementById('analysisPageView');
@@ -935,6 +982,7 @@
 
     if (portfolioView) portfolioView.style.display = 'none';
     if (futuresView) futuresView.style.display = 'none';
+    if (futuresTableViewContainer) futuresTableViewContainer.style.display = 'none';
     if (tableViewContainer) tableViewContainer.style.display = 'none';
     if (filterSection) filterSection.style.display = 'none';
     if (analysisView) analysisView.style.display = 'none';
@@ -990,6 +1038,85 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  function switchToFuturesTable() {
+    var futuresView = document.getElementById('futuresView');
+    var futuresTableViewContainer = document.getElementById('futuresTableViewContainer');
+    if (futuresView) futuresView.style.display = 'none';
+    if (futuresTableViewContainer) futuresTableViewContainer.style.display = 'flex';
+    renderFuturesTable();
+  }
+
+  function switchToFuturesCards() {
+    var futuresView = document.getElementById('futuresView');
+    var futuresTableViewContainer = document.getElementById('futuresTableViewContainer');
+    if (futuresTableViewContainer) futuresTableViewContainer.style.display = 'none';
+    if (futuresView) futuresView.style.display = 'flex';
+    renderFuturesCards();
+  }
+
+  function renderFuturesTable() {
+    var tbody = document.getElementById('futuresTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    var statusFilter = document.getElementById('tableFuturesStatusSelect') ? document.getElementById('tableFuturesStatusSelect').value : 'OPEN';
+    var typeFilter = document.getElementById('tableFuturesTypeSelect') ? document.getElementById('tableFuturesTypeSelect').value : 'ALL';
+
+    var filtered = futures.filter(function(f) {
+      var matchStatus = (statusFilter === 'ALL') || (statusFilter === 'OPEN' && !f.isClosed) || (statusFilter === 'CLOSED' && f.isClosed);
+      var matchType = (typeFilter === 'ALL') || (f.type === typeFilter);
+      return matchStatus && matchType;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px; color: var(--text-muted);">Geen futures gevonden met deze filters.</td></tr>';
+      return;
+    }
+
+    var sorted = filtered.slice().sort(function(a, b) {
+      var dateA = (a.isClosed && a.closeDate) ? a.closeDate : a.date;
+      var dateB = (b.isClosed && b.closeDate) ? b.closeDate : b.date;
+      return new Date(dateB) - new Date(dateA);
+    });
+
+    sorted.forEach(function(f) {
+      var binanceSym = getBinanceFuturesSymbol(f.symbol);
+      var curPrice = binanceFuturesPrices[binanceSym] !== undefined ? binanceFuturesPrices[binanceSym] : f.entryPrice;
+
+      var pnl = 0;
+      var pnlPct = 0;
+      if (f.isClosed) {
+        var closeDiff = (f.type === 'LONG') ? (f.closePrice - f.entryPrice) : (f.entryPrice - f.closePrice);
+        pnl = closeDiff * f.amount;
+        pnlPct = f.margin > 0 ? (pnl / f.margin) * 100 : 0;
+      } else {
+        var openDiff = (f.type === 'LONG') ? (curPrice - f.entryPrice) : (f.entryPrice - curPrice);
+        pnl = openDiff * f.amount;
+        pnlPct = f.margin > 0 ? (pnl / f.margin) * 100 : 0;
+      }
+
+      var sign = pnl >= 0 ? '+' : '';
+      var colorClass = pnl >= 0 ? 'val-profit' : 'val-loss';
+      var typeBadgeClass = f.type === 'LONG' ? 'date-open' : 'date-sold';
+
+      var dateHtml = f.isClosed ? 
+        '<span class="date-sold">' + formatDateNL(f.closeDate || f.date) + '</span><div style="font-size: 0.65rem; color: var(--text-muted);">Open: ' + formatDateNL(f.date) + '</div>' :
+        '<span class="date-open">' + formatDateNL(f.date) + '</span>';
+
+      var priceHtml = f.isClosed ?
+        'Sluit: <strong>' + formatKoers(f.closePrice, 'USD') + '</strong><div style="font-size: 0.65rem; color: var(--text-muted);">Instap: ' + formatKoers(f.entryPrice, 'USD') + '</div>' :
+        'Koers: <strong>' + formatKoers(curPrice, 'USD') + '</strong><div style="font-size: 0.65rem; color: var(--text-muted);">Instap: ' + formatKoers(f.entryPrice, 'USD') + '</div>';
+
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + dateHtml + '</td>' +
+        '<td><strong>' + f.symbol + '</strong> <span class="' + typeBadgeClass + '" style="font-size:0.68rem;">(' + f.type + ' ' + f.leverage + 'x)</span></td>' +
+        '<td>' + formatUSD(f.margin) + '</td>' +
+        '<td>' + priceHtml + '</td>' +
+        '<td><strong class="' + colorClass + '">' + sign + formatUSD(pnl) + '<br>(' + sign + pnlPct.toFixed(1) + '%)</strong></td>';
+      tbody.appendChild(tr);
+    });
+  }
+
   function fetchLivePrices() {
     var openSymbols = [];
     for (var i = 0; i < purchases.length; i++) {
@@ -1036,6 +1163,7 @@
             }
           });
           renderFuturesCards();
+          renderFuturesTable();
         }
       })
       .catch(function(err) {
@@ -1081,6 +1209,7 @@
   function openFuturesAddForm() {
     var portfolioView = document.getElementById('portfolioView');
     var futuresView = document.getElementById('futuresView');
+    var futuresTableViewContainer = document.getElementById('futuresTableViewContainer');
     var tableViewContainer = document.getElementById('tableViewContainer');
     var futuresForm = document.getElementById('futuresForm');
     var portfolioSummary = document.getElementById('portfolioSummaryBlock');
@@ -1088,6 +1217,7 @@
 
     if (portfolioView) portfolioView.style.display = 'none';
     if (futuresView) futuresView.style.display = 'none';
+    if (futuresTableViewContainer) futuresTableViewContainer.style.display = 'none';
     if (tableViewContainer) tableViewContainer.style.display = 'none';
     if (portfolioSummary) portfolioSummary.style.display = 'none';
     if (futuresSummary) futuresSummary.style.display = 'none';
@@ -1114,6 +1244,7 @@
 
     var portfolioView = document.getElementById('portfolioView');
     var futuresView = document.getElementById('futuresView');
+    var futuresTableViewContainer = document.getElementById('futuresTableViewContainer');
     var tableViewContainer = document.getElementById('tableViewContainer');
     var futuresForm = document.getElementById('futuresForm');
     var portfolioSummary = document.getElementById('portfolioSummaryBlock');
@@ -1121,6 +1252,7 @@
 
     if (portfolioView) portfolioView.style.display = 'none';
     if (futuresView) futuresView.style.display = 'none';
+    if (futuresTableViewContainer) futuresTableViewContainer.style.display = 'none';
     if (tableViewContainer) tableViewContainer.style.display = 'none';
     if (portfolioSummary) portfolioSummary.style.display = 'none';
     if (futuresSummary) futuresSummary.style.display = 'none';
@@ -1208,6 +1340,7 @@
     saveToCloud();
     closeFuturesForm();
     renderFuturesCards();
+    renderFuturesTable();
   }
 
   function openCloseFutureDialog(id) {
@@ -1229,6 +1362,7 @@
 
     saveToCloud();
     renderFuturesCards();
+    renderFuturesTable();
   }
 
   function reopenFuture(id) {
@@ -1243,6 +1377,7 @@
       }
       saveToCloud();
       renderFuturesCards();
+      renderFuturesTable();
     }
   }
 
@@ -1251,6 +1386,7 @@
       futures = futures.filter(function(f) { return f.id !== id; });
       saveToCloud();
       renderFuturesCards();
+      renderFuturesTable();
     }
   }
 
@@ -1437,7 +1573,7 @@
         headerTitle.textContent = 'Munt: ' + activeCoinFilter + exText;
         ind.textContent = activeCoinFilter;
       } else {
-        headerTitle.textContent = 'Mijn Spot Portefeuille';
+        headerTitle.textContent = 'Portefeuille Jeannette';
         ind.textContent = 'Alles';
       }
     }
@@ -1669,7 +1805,6 @@
   }
 
   function jumpToCard(id) {
-    switchNavTab('portfolio');
     var target = null;
     for (var i = 0; i < purchases.length; i++) { if (purchases[i].id == id) { target = purchases[i]; break; } }
     if (target) {
@@ -1678,10 +1813,85 @@
       renderCards();
     }
     selectedHighlightId = id;
+    switchNavTab('portfolio');
     setTimeout(function() {
       var el = document.getElementById('card_' + id);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
+    }, 150);
+  }
+
+  // --- VERKOOP DIALOOG FUNCTIES ---
+  function openSellDialog(id) {
+    var item = null;
+    for (var i = 0; i < purchases.length; i++) { if (purchases[i].id === id) { item = purchases[i]; break; } }
+    if (!item) return;
+
+    var portfolioView = document.getElementById('portfolioView');
+    var sellForm = document.getElementById('sellForm');
+    var filterSection = document.getElementById('filterSection');
+
+    if (portfolioView) portfolioView.style.display = 'none';
+    if (filterSection) filterSection.style.display = 'none';
+    if (sellForm) sellForm.style.display = 'flex';
+
+    var sellId = document.getElementById('sellId'); if (sellId) sellId.value = item.id;
+    var heading = document.getElementById('sellFormHeading'); if (heading) heading.textContent = item.symbol + ' Verkopen';
+    var sellAmount = document.getElementById('sellAmount');
+    if (sellAmount) { sellAmount.value = item.amount; sellAmount.max = item.amount; }
+    var sellPrice = document.getElementById('sellPrice'); if (sellPrice) sellPrice.value = livePrices[item.symbol] || item.price;
+    var sellDate = document.getElementById('sellDate'); if (sellDate) sellDate.value = new Date().toISOString().split('T')[0];
+    var displayPurchaseDate = document.getElementById('displayPurchaseDate');
+    if (displayPurchaseDate) displayPurchaseDate.value = formatDateNL(item.date);
+    var dt = document.getElementById('sellFormDetails');
+    if (dt) dt.innerHTML = 'Aangekocht: <strong>' + formatAantal(item.amount) + '</strong> stuks @ ' + formatKoers(item.price, 'EUR') + ' (op ' + formatDateNL(item.date) + ') via ' + item.exchange;
+    updateSellYieldPreview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function updateSellYieldPreview() {
+    var amt = parseFloat(document.getElementById('sellAmount').value) || 0;
+    var prc = parseFloat(document.getElementById('sellPrice').value) || 0;
+    var previewEl = document.getElementById('sellYieldPreview');
+    if (previewEl) previewEl.textContent = 'Verwachte opbrengst: ' + formatEUR(amt * prc);
+  }
+
+  function closeSellForm() {
+    var sellForm = document.getElementById('sellForm');
+    if (sellForm) sellForm.style.display = 'none';
+    switchNavTab('portfolio');
+  }
+
+  function confirmSale(event) {
+    event.preventDefault();
+    var sellId = document.getElementById('sellId').value;
+    var sellAmount = parseFloat(document.getElementById('sellAmount').value);
+    var sellPrice = parseFloat(document.getElementById('sellPrice').value);
+    var sellDate = document.getElementById('sellDate').value;
+    var item = null;
+    for (var i = 0; i < purchases.length; i++) { if (purchases[i].id == sellId) { item = purchases[i]; break; } }
+    if (!item) return;
+
+    if (isNaN(sellAmount) || sellAmount <= 0 || sellAmount > item.amount) {
+      alert('Voer een geldig aantal stuks in tussen 0 en ' + formatAantal(item.amount)); return;
+    }
+
+    if (!item.initialAmount) item.initialAmount = item.amount;
+    var currentInitial = item.initialAmount;
+    var originalDate = item.date;
+
+    if (sellAmount === item.amount) {
+      item.isSold = true; item.sellPrice = sellPrice; item.sellDate = sellDate;
+    } else {
+      var remaining = +(item.amount - sellAmount).toFixed(8);
+      var soldPart = {
+        id: Date.now(), symbol: item.symbol, exchange: item.exchange, amount: sellAmount, initialAmount: sellAmount,
+        price: item.price, date: originalDate, isSold: true, sellPrice: sellPrice, sellDate: sellDate, partiallySold: false
+      };
+      purchases.unshift(soldPart);
+      item.initialAmount = currentInitial; item.amount = remaining; item.date = originalDate; item.partiallySold = true;
+    }
+    selectedHighlightId = null;
+    saveToCloud(); closeSellForm(); renderCards(); renderTableFilters(); renderTable(); updateSummary(); updateStatusDisplay();
   }
 
   function renderTable() {
@@ -1758,7 +1968,11 @@
     return purchases.filter(function(p) {
       var matchEx = (tblSelectedExchangeFilter === 'ALL' || p.exchange.trim() === tblSelectedExchangeFilter);
       var matchCoin = (tblSelectedCoinFilter === 'ALL' || p.symbol.trim().toUpperCase() === tblSelectedCoinFilter);
-      return matchEx && matchCoin;
+      var matchSt = true;
+      if (tblSelectedStatusFilter === 'OPEN') matchSt = !p.isSold;
+      else if (tblSelectedStatusFilter === 'PARTSOLD') matchSt = !p.isSold && p.partiallySold;
+      else if (tblSelectedStatusFilter === 'SOLD') matchSt = p.isSold;
+      return matchEx && matchCoin && matchSt;
     });
   }
 
@@ -1793,6 +2007,7 @@
 
   function setTableExchangeFilter(exchange) { tblSelectedExchangeFilter = exchange; renderTableFilters(); renderTable(); }
   function handleTableCoinChange(coin) { tblSelectedCoinFilter = coin; renderTable(); }
+  function handleTableStatusChange(status) { tblSelectedStatusFilter = status; renderTable(); }
 
   // --- ANALYSE & TECHNISCHE INDICATOREN (Spot Binance Klines) ---
   function setAnalysisInterval(interval, btnElement) {
@@ -2384,8 +2599,6 @@
       });
     }
 
-    // Ondersteunt de browser-installprompt wanneer die beschikbaar is.
-    // De app blijft volledig bruikbaar zonder deze prompt (bijv. iOS).
     window.addEventListener('beforeinstallprompt', function(event) {
       window.deferredInstallPrompt = event;
       event.preventDefault();

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'crypto-tracker-v2';
+const CACHE_NAME = 'crypto-tracker-v3';
 
 const APP_SHELL = [
   './',

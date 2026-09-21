@@ -438,8 +438,8 @@
 
     <div class="summary-controls">
       <div class="summary-btn-group">
-        <button class="btn-primary" onclick="openAddForm()">+ Spot Aankoop</button>
-        <button class="btn-secondary" onclick="manualRefresh()">🔄 Koersen Verversen</button>
+        <button type="button" class="btn-primary" onclick="openAddForm()">+ Spot Aankoop</button>
+        <button type="button" class="btn-secondary" onclick="manualRefresh()">🔄 Koersen Verversen</button>
       </div>
       <span id="statusMessage">Klaar</span>
     </div>
@@ -463,8 +463,8 @@
 
     <div class="summary-controls">
       <div class="summary-btn-group">
-        <button class="btn-futures" onclick="openFuturesAddForm()">+ Future Positie</button>
-        <button class="btn-secondary" onclick="manualRefreshFutures()">🔄 Koersen Verversen</button>
+        <button type="button" class="btn-futures" onclick="openFuturesAddForm()">+ Future Positie</button>
+        <button type="button" class="btn-secondary" onclick="manualRefreshFutures()">🔄 Koersen Verversen</button>
       </div>
       <span id="futuresStatusMessage">Live Binance gekoppeld</span>
     </div>
@@ -474,9 +474,9 @@
   <div id="portfolioView">
     <div class="filter-section" id="filterSection">
       <div id="subScreenNav" style="display: none; justify-content: space-between; align-items: center; background: #1e293b; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 10px; margin-bottom: 6px;">
-        <button class="btn-secondary" onclick="returnToAggregatedHome()">← Terug naar Overzicht</button>
+        <button type="button" class="btn-secondary" onclick="returnToAggregatedHome()">← Terug naar Overzicht</button>
         <div id="subScreenTitle" style="font-weight: 700; color: #38bdf8; font-size: 0.95rem;">Munt</div>
-        <button class="btn-secondary" onclick="showAllTransactions()">Alles</button>
+        <button type="button" class="btn-secondary" onclick="showAllTransactions()">Alles</button>
       </div>
 
       <div id="coinDetailFilters" style="display: none; gap: 8px; align-items: center; flex-wrap: wrap;">
@@ -509,7 +509,7 @@
             <option value="SHORT">Alleen Short</option>
           </select>
         </div>
-        <button class="btn-secondary" onclick="switchToFuturesTable()">📋 Tabel Weergave</button>
+        <button type="button" id="btnGoToFuturesTable" class="btn-secondary" onclick="toggleFuturesView('table')">📋 Tabel Weergave</button>
       </div>
     </div>
 
@@ -520,7 +520,7 @@
   <div id="futuresTableViewContainer">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
       <h3 style="font-size: 1.05rem; font-weight: 700; color: #c084fc;">Futures Transactie Tabel</h3>
-      <button class="btn-secondary" onclick="switchToFuturesCards()">← Terug naar Kaarten</button>
+      <button type="button" id="btnGoToFuturesCards" class="btn-secondary" onclick="toggleFuturesView('cards')">← Terug naar Kaarten</button>
     </div>
     <div class="filter-section">
       <div class="filter-bar" style="flex-wrap: wrap; gap: 8px;">
@@ -556,7 +556,7 @@
   <div id="tableViewContainer">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
       <h3 style="font-size: 1.05rem; font-weight: 700;">Transactie Tabel</h3>
-      <button class="btn-secondary" onclick="switchNavTab('portfolio')">← Terug naar Portefeuille</button>
+      <button type="button" class="btn-secondary" onclick="switchNavTab('portfolio')">← Terug naar Portefeuille</button>
     </div>
     <div class="filter-section" id="tableFilterSection">
       <div class="filter-bar" style="flex-wrap: wrap; gap: 8px;">
@@ -744,16 +744,16 @@
         <div id="analysisStatusMsg" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Wordt automatisch elke 10 minuten vernieuwd...</div>
       </div>
       <div style="display: flex; gap: 6px; align-items: center;">
-        <button class="btn-secondary" onclick="loadBatchAnalysis()">Verversen</button>
+        <button type="button" class="btn-secondary" onclick="loadBatchAnalysis()">Verversen</button>
       </div>
     </div>
 
     <div class="filter-bar" id="analysisIntervalFilters" style="margin-bottom: 6px; gap: 6px;">
       <span style="font-size: 0.75rem; color: var(--text-muted); margin-right: 4px;">Tijdsduur:</span>
-      <button class="filter-btn" onclick="setAnalysisInterval('1d', this)">Dag (1d)</button>
-      <button class="filter-btn active" onclick="setAnalysisInterval('1h', this)">Uur (1u)</button>
-      <button class="filter-btn" onclick="setAnalysisInterval('30m', this)">30 min</button>
-      <button class="filter-btn" onclick="setAnalysisInterval('15m', this)">15 min</button>
+      <button type="button" class="filter-btn" onclick="setAnalysisInterval('1d', this)">Dag (1d)</button>
+      <button type="button" class="filter-btn active" onclick="setAnalysisInterval('1h', this)">Uur (1u)</button>
+      <button type="button" class="filter-btn" onclick="setAnalysisInterval('30m', this)">30 min</button>
+      <button type="button" class="filter-btn" onclick="setAnalysisInterval('15m', this)">15 min</button>
     </div>
 
     <div id="analysisListContainer" style="display: flex; flex-direction: column; gap: 10px;"></div>
@@ -766,7 +766,7 @@
         <h3 id="chartPageTitle" style="font-size: 1.05rem; font-weight: 700; color: #38bdf8;">Grafiek</h3>
         <select id="chartCoinSelector" class="filter-select" onchange="switchChartCoin(this.value)" style="padding: 4px 10px; font-size: 0.75rem;"></select>
       </div>
-      <button class="btn-secondary" onclick="returnFromChart()">← Terug</button>
+      <button type="button" class="btn-secondary" onclick="returnFromChart()">← Terug</button>
     </div>
     <div class="tradingview-container" id="tradingviewWidgetWrapper"></div>
   </div>
@@ -796,29 +796,29 @@
   </div>
 
   <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.7.0 (Futures Table Added)</span>
+    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.7.2 (Robust Futures Table Toggle)</span>
   </div>
 </div>
 
 <!-- Vaste App Navigatiebalk onderaan -->
 <nav class="app-bottom-nav">
-  <button class="nav-item active" id="navPortfolioBtn" onclick="switchNavTab('portfolio')">
+  <button type="button" class="nav-item active" id="navPortfolioBtn" onclick="switchNavTab('portfolio')">
     <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
     Portefeuille
   </button>
-  <button class="nav-item futures-nav" id="navFuturesBtn" onclick="switchNavTab('futures')">
+  <button type="button" class="nav-item futures-nav" id="navFuturesBtn" onclick="switchNavTab('futures')">
     <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
     Futures
   </button>
-  <button class="nav-item" id="navTableBtn" onclick="switchNavTab('table')">
+  <button type="button" class="nav-item" id="navTableBtn" onclick="switchNavTab('table')">
     <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
     Tabel
   </button>
-  <button class="nav-item" id="navAnalysisBtn" onclick="switchNavTab('analysis')">
+  <button type="button" class="nav-item" id="navAnalysisBtn" onclick="switchNavTab('analysis')">
     <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
     Analyse
   </button>
-  <button class="nav-item" id="navMenuBtn" onclick="switchNavTab('menu')">
+  <button type="button" class="nav-item" id="navMenuBtn" onclick="switchNavTab('menu')">
     <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
     Menu
   </button>
@@ -848,6 +848,7 @@
   var livePrices = {};
   var binanceFuturesPrices = {};
   var currentActiveTab = 'portfolio';
+  var currentFuturesSubView = 'cards'; // 'cards' of 'table'
 
   var analysisTimer = null;
   var currentAnalysisInterval = '1h';
@@ -1008,9 +1009,8 @@
       renderCards();
     } else if (tabName === 'futures') {
       var btn = document.getElementById('navFuturesBtn'); if (btn) btn.classList.add('active');
-      if (futuresView) futuresView.style.display = 'flex';
       if (futuresSummary) futuresSummary.style.display = 'flex';
-      renderFuturesCards();
+      toggleFuturesView(currentFuturesSubView);
     } else if (tabName === 'analysis') {
       var btn = document.getElementById('navAnalysisBtn'); if (btn) btn.classList.add('active');
       if (analysisView) analysisView.style.display = 'flex';
@@ -1038,20 +1038,21 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function switchToFuturesTable() {
-    var futuresView = document.getElementById('futuresView');
-    var futuresTableViewContainer = document.getElementById('futuresTableViewContainer');
-    if (futuresView) futuresView.style.display = 'none';
-    if (futuresTableViewContainer) futuresTableViewContainer.style.display = 'flex';
-    renderFuturesTable();
-  }
+  function toggleFuturesView(mode) {
+    currentFuturesSubView = mode;
+    var cardsView = document.getElementById('futuresView');
+    var tableView = document.getElementById('futuresTableViewContainer');
 
-  function switchToFuturesCards() {
-    var futuresView = document.getElementById('futuresView');
-    var futuresTableViewContainer = document.getElementById('futuresTableViewContainer');
-    if (futuresTableViewContainer) futuresTableViewContainer.style.display = 'none';
-    if (futuresView) futuresView.style.display = 'flex';
-    renderFuturesCards();
+    if (mode === 'table') {
+      if (cardsView) cardsView.style.display = 'none';
+      if (tableView) tableView.style.display = 'flex';
+      renderFuturesTable();
+    } else {
+      if (tableView) tableView.style.display = 'none';
+      if (cardsView) cardsView.style.display = 'flex';
+      renderFuturesCards();
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function renderFuturesTable() {
@@ -1476,9 +1477,9 @@
           '<div class="metric-col"><span>Hefboom</span><strong>' + f.leverage + 'x</strong></div>' +
         '</div>';
 
-        actionButtons = '<button class="btn-action" onclick="editFuture(' + f.id + ')">Bewerken</button>' +
-                        '<button class="btn-action" onclick="reopenFuture(' + f.id + ')">Heropenen</button>' +
-                        '<button class="btn-action delete" onclick="deleteFuture(' + f.id + ')">Verwijderen</button>';
+        actionButtons = '<button type="button" class="btn-action" onclick="editFuture(' + f.id + ')">Bewerken</button>' +
+                        '<button type="button" class="btn-action" onclick="reopenFuture(' + f.id + ')">Heropenen</button>' +
+                        '<button type="button" class="btn-action delete" onclick="deleteFuture(' + f.id + ')">Verwijderen</button>';
       } else {
         metricsHTML = '<div class="metrics-grid">' +
           '<div class="metric-col"><span>Start Margin</span><strong>' + formatUSD(f.margin) + '</strong></div>' +
@@ -1487,9 +1488,9 @@
           '<div class="metric-col"><span>Resultaat</span><strong class="' + colorClass + '">' + sign + formatUSD(pnl) + ' (' + sign + pnlPct.toFixed(1) + '%)</strong></div>' +
         '</div>';
 
-        actionButtons = '<button class="btn-action sold-action" onclick="openCloseFutureDialog(' + f.id + ')">Sluiten</button>' +
-                        '<button class="btn-action" onclick="editFuture(' + f.id + ')">Bewerken</button>' +
-                        '<button class="btn-action delete" onclick="deleteFuture(' + f.id + ')">Verwijderen</button>';
+        actionButtons = '<button type="button" class="btn-action sold-action" onclick="openCloseFutureDialog(' + f.id + ')">Sluiten</button>' +
+                        '<button type="button" class="btn-action" onclick="editFuture(' + f.id + ')">Bewerken</button>' +
+                        '<button type="button" class="btn-action delete" onclick="deleteFuture(' + f.id + ')">Verwijderen</button>';
       }
 
       var statusText = f.isClosed ? '<span class="badge-status sold">Gesloten: ' + formatDateNL(f.closeDate) + '</span>' : '<span class="badge-status open">Open Positie</span>';
@@ -1573,7 +1574,7 @@
         headerTitle.textContent = 'Munt: ' + activeCoinFilter + exText;
         ind.textContent = activeCoinFilter;
       } else {
-        headerTitle.textContent = 'Portefeuille Jeannette';
+        headerTitle.textContent = 'Mijn Spot Portefeuille';
         ind.textContent = 'Alles';
       }
     }
@@ -1693,9 +1694,9 @@
           '<div class="metric-col"><span>W/V</span><strong class="' + color + '">' + sign + formatEUR(diff) + ' (' + sign + perc.toFixed(1) + '%)</strong></div>' +
         '</div>';
 
-        actionButtons = '<button class="btn-action" onclick="editPurchase(' + p.id + ')">Bewerken</button>' +
-                        '<button class="btn-action" onclick="reopenPosition(' + p.id + ')">Heropenen</button>' +
-                        '<button class="btn-action delete" onclick="deletePurchase(' + p.id + ')">Verwijderen</button>';
+        actionButtons = '<button type="button" class="btn-action" onclick="editPurchase(' + p.id + ')">Bewerken</button>' +
+                        '<button type="button" class="btn-action" onclick="reopenPosition(' + p.id + ')">Heropenen</button>' +
+                        '<button type="button" class="btn-action delete" onclick="deletePurchase(' + p.id + ')">Verwijderen</button>';
       } else {
         statusBadge = '<span class="badge-status open">Open</span>';
         if (p.partiallySold) {
@@ -1724,10 +1725,10 @@
           '</div>';
         }
 
-        actionButtons = '<button class="btn-action chart-action" onclick="openChartTab(\'' + p.symbol + '\', \'portfolio\')">📊 Grafiek</button>' +
-                        '<button class="btn-action sold-action" onclick="openSellDialog(' + p.id + ')">Verkocht</button>' +
-                        '<button class="btn-action" onclick="editPurchase(' + p.id + ')">Bewerken</button>' +
-                        '<button class="btn-action delete" onclick="deletePurchase(' + p.id + ')">Verwijderen</button>';
+        actionButtons = '<button type="button" class="btn-action chart-action" onclick="openChartTab(\'' + p.symbol + '\', \'portfolio\')">📊 Grafiek</button>' +
+                        '<button type="button" class="btn-action sold-action" onclick="openSellDialog(' + p.id + ')">Verkocht</button>' +
+                        '<button type="button" class="btn-action" onclick="editPurchase(' + p.id + ')">Bewerken</button>' +
+                        '<button type="button" class="btn-action delete" onclick="deletePurchase(' + p.id + ')">Verwijderen</button>';
       }
 
       card.innerHTML = '<div class="card-header">' +
@@ -1805,6 +1806,7 @@
   }
 
   function jumpToCard(id) {
+    switchNavTab('portfolio');
     var target = null;
     for (var i = 0; i < purchases.length; i++) { if (purchases[i].id == id) { target = purchases[i]; break; } }
     if (target) {
@@ -1813,11 +1815,10 @@
       renderCards();
     }
     selectedHighlightId = id;
-    switchNavTab('portfolio');
     setTimeout(function() {
       var el = document.getElementById('card_' + id);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 150);
+    }, 100);
   }
 
   // --- VERKOOP DIALOOG FUNCTIES ---
@@ -2099,7 +2100,7 @@
               '<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">' +
                 '<div style="display: flex; align-items: center; gap: 6px;">' +
                   '<div class="coin-badge">' + res.symbol + '</div>' +
-                  '<button class="btn-action chart-action" style="padding: 2px 6px; font-size: 0.7rem;" onclick="openChartTabFromAnalysis(\'' + res.symbol + '\')">📊 Grafiek</button>' +
+                  '<button type="button" class="btn-action chart-action" style="padding: 2px 6px; font-size: 0.7rem;" onclick="openChartTabFromAnalysis(\'' + res.symbol + '\')">📊 Grafiek</button>' +
                 '</div>' +
                 '<div class="meta-info">Koers: <strong>$ ' + currentPrice.toFixed(4) + '</strong></div>' +
                 '<div style="font-size: 0.75rem; color: var(--text-muted);">RSI (14): <strong>' + rsi.toFixed(1) + '</strong> <span style="color: ' + rsiColor + ';">(' + rsiSignal + ')</span></div>' +
@@ -2563,7 +2564,7 @@
       futures = data.futures || [];
       if (Array.isArray(data.customExchanges)) customExchanges = data.customExchanges;
       autoReconcilePartiallySold(); selectedHighlightId = null;
-      saveToCloud(); renderCards(); renderFuturesCards(); renderTableFilters(); renderTable(); fetchLivePrices(); fetchBinanceFuturesPrices();
+      saveToCloud(); renderCards(); renderFuturesCards(); renderFuturesTable(); renderTableFilters(); renderTable(); fetchLivePrices(); fetchBinanceFuturesPrices();
       alert('Gegevens succesvol hersteld!');
     } catch(err) { alert('Fout bij herstellen: ' + err.message); }
   }

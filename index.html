@@ -2,11 +2,18 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="Crypto Portfolio & Futures Tracker met Spot, Futures, analyse, backup en cloudsync.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CryptoTracker">
   <title>Crypto Portfolio & Futures Tracker</title>
   
   <link rel="manifest" href="manifest.json">
 
+  <!-- PWA: manifest.json en sw.js staan naast index.html; geschikt voor GitHub Pages -->
   <!-- Firebase App (v10 CDN Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <!-- Firebase Firestore -->
@@ -42,7 +49,8 @@
       background-color: var(--bg);
       color: var(--text-main);
       padding: 16px;
-      padding-bottom: 80px;
+      padding-bottom: calc(80px + env(safe-area-inset-bottom));
+      padding-top: env(safe-area-inset-top);
       display: flex;
       justify-content: center;
       overflow-x: hidden;
@@ -69,7 +77,7 @@
       display: flex;
       justify-content: space-around;
       align-items: center;
-      padding: 8px 0;
+      padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
       z-index: 1000;
     }
 
@@ -2368,10 +2376,26 @@
     startAutoRefreshTimer();
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function(err) {
-        console.log('ServiceWorker registratie mislukt: ', err);
+      navigator.serviceWorker.register('./sw.js', { scope: './' }).then(function(registration) {
+        console.log('ServiceWorker geregistreerd:', registration.scope);
+        registration.update();
+      }).catch(function(err) {
+        console.log('ServiceWorker registratie mislukt:', err);
       });
     }
+
+    // Ondersteunt de browser-installprompt wanneer die beschikbaar is.
+    // De app blijft volledig bruikbaar zonder deze prompt (bijv. iOS).
+    window.addEventListener('beforeinstallprompt', function(event) {
+      window.deferredInstallPrompt = event;
+      event.preventDefault();
+      console.log('PWA kan geïnstalleerd worden.');
+    });
+
+    window.addEventListener('appinstalled', function() {
+      window.deferredInstallPrompt = null;
+      console.log('CryptoTracker als PWA geïnstalleerd.');
+    });
   });
 </script>
 </body>

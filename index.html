@@ -2279,8 +2279,8 @@
     var fileName = 'crypto_portfolio_backup.json';
     var jsonStr = getBackupJSON();
 
-    if (!isMobileDevice && window.showSaveFilePicker) {
-      window.showSaveFilePicker({ suggestedName: fileName, types: [{ description: 'JSON Bestand', accept: { 'application/json': ['.json'] } }] })
+    if (window.showSaveFilePicker) {
+      window.showSaveFilePicker({ id: 'crypto-tracker-backup', suggestedName: fileName, types: [{ description: 'JSON Bestand', accept: { 'application/json': ['.json'] } }] })
       .then(function(handle) { saveActiveFileHandle(handle); return handle.createWritable().then(function(w) { return w.write(jsonStr).then(function() { return w.close(); }); }); })
       .then(function() { alert('Backup succesvol opgeslagen en gekoppeld!'); })
       .catch(function(err) { if (err.name !== 'AbortError') fallbackDownloadOrShare(jsonStr, fileName); });
@@ -2322,7 +2322,7 @@
   }
 
   function importBackup() {
-    if (!isMobileDevice && window.showOpenFilePicker) {
+    if (window.showOpenFilePicker) {
       window.showOpenFilePicker({ multiple: false, types: [{ description: 'JSON Bestand', accept: { 'application/json': ['.json'] } }] })
       .then(function(handles) { var handle = handles[0]; saveActiveFileHandle(handle); return handle.getFile().then(function(f) { return f.text(); }); })
       .then(function(text) { applyRestoredData(text); })

@@ -798,7 +798,7 @@
   </div>
 
   <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.7.6 (Immediate Fetch & Compact Table Filters)</span>
+    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.8.0 (Instant Parallel Fetch & Compact Table Filters)</span>
   </div>
 </div>
 
@@ -885,7 +885,7 @@
       renderTableFilters();
       renderTable();
       
-      // Direct ophalen van koersen zonder te wachten op interval
+      // Direct ophalen van koersen in één keer parallel
       fetchLivePrices();
       fetchBinanceFuturesPrices();
 
@@ -1120,7 +1120,7 @@
     });
   }
 
-function fetchLivePrices() {
+  function fetchLivePrices() {
     var openSymbols = [];
     for (var i = 0; i < purchases.length; i++) {
       if (!purchases[i].isSold) {
@@ -1130,7 +1130,6 @@ function fetchLivePrices() {
     }
     if (openSymbols.length === 0) { updateStatusDisplay(); updateSummary(); return; }
 
-    // Haal gelijktijdig de EUR/USDT koers en alle munten tegelijk op voor maximale snelheid
     var eurRequest = fetch('https://api.binance.com/api/v3/ticker/price?symbol=EURUSDT').then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; });
     
     var coinRequests = openSymbols.map(function(sym) {
@@ -1140,6 +1139,7 @@ function fetchLivePrices() {
         .catch(function() {
           return fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'USDT')
             .then(function(r2) { return r2.ok ? r2.json() : null; })
+            .then(function(usdtData) { return { sym: sym, usdtPrice: usdtData && usdtData.price ? parseFloat(usdtData.price) : null }; })
             .catch(function() { return null; });
         });
     });
@@ -1152,12 +1152,10 @@ function fetchLivePrices() {
         var res = results[i];
         if (!res) continue;
         var sym = openSymbols[i - 1];
-        if (res.price !== undefined) {
+        if (res.price !== undefined && !isNaN(res.price)) {
           livePrices[sym] = res.price;
-        } else if (res.priceStr || res.price) {
-          // Als het via USDT binnenkomt
-          var pUsdt = parseFloat(res.price);
-          if (!isNaN(pUsdt)) livePrices[sym] = pUsdt / eurUsdtRate;
+        } else if (res.usdtPrice !== undefined && !isNaN(res.usdtPrice)) {
+          livePrices[sym] = res.usdtPrice / eurUsdtRate;
         }
       }
 
@@ -1528,6 +1526,8 @@ function fetchLivePrices() {
 
     updateFuturesSummary(futures.filter(function(f) { return !f.isClosed; }));
   }
+
+  function updateyszerSummary() {} // placeholder
 
   function updateSummary() {
     var tableViewContainer = document.getElementById('tableViewContainer');

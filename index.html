@@ -560,12 +560,14 @@
     </div>
     <div class="filter-section" id="tableFilterSection">
       <div class="filter-bar" style="flex-wrap: wrap; gap: 8px;">
-        <div id="tableExchangeFilters" style="display: flex; gap: 6px; overflow-x: auto;"></div>
+        <select id="tableExchangeSelect" class="filter-select" onchange="handleTableExchangeChange(this.value)">
+          <option value="ALL">Exchange</option>
+        </select>
         <select id="tableCoinSelect" class="filter-select" onchange="handleTableCoinChange(this.value)">
-          <option value="ALL">Alle Munten</option>
+          <option value="ALL">Munten</option>
         </select>
         <select id="tableStatusSelect" class="filter-select" onchange="handleTableStatusChange(this.value)">
-          <option value="ALL">Alle Statussen</option>
+          <option value="ALL">Status</option>
           <option value="OPEN">Open</option>
           <option value="PARTSOLD">Deels verkocht</option>
           <option value="SOLD">Verkocht</option>
@@ -796,7 +798,7 @@
   </div>
 
   <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.7.3 (Spot Table Status Filter Restored)</span>
+    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.7.6 (Immediate Fetch & Compact Table Filters)</span>
   </div>
 </div>
 
@@ -883,6 +885,7 @@
       renderTableFilters();
       renderTable();
       
+      // Direct ophalen van koersen zonder te wachten op interval
       fetchLivePrices();
       fetchBinanceFuturesPrices();
 
@@ -929,7 +932,6 @@
     if (updated) saveToCloud();
   }
 
-  var tblSelectedStatuses = { OPEN: true, PARTSOLD: true, SOLD: true };
   var tblSelectedExchangeFilter = 'ALL';
   var tblSelectedCoinFilter = 'ALL';
   var tblSelectedStatusFilter = 'ALL';
@@ -1541,7 +1543,7 @@
         headerTitle.textContent = 'Munt: ' + activeCoinFilter + exText;
         ind.textContent = activeCoinFilter;
       } else {
-        headerTitle.textContent = 'Portefeuille Jeannette';
+        headerTitle.textContent = 'Mijn Spot Portefeuille';
         ind.textContent = 'Alles';
       }
     }
@@ -1934,7 +1936,7 @@
 
   function getTableFilteredPurchases() {
     return purchases.filter(function(p) {
-      var matchEx = (tblSelectedExchangeFilter === 'ALL' || p.exchange.trim() === tblSelectedExchangeFilter);
+      var matchEx = (tblSelectedExchangeFilter === 'ALL' || p.exchange.trim().toLowerCase() === tblSelectedExchangeFilter.toLowerCase());
       var matchCoin = (tblSelectedCoinFilter === 'ALL' || p.symbol.trim().toUpperCase() === tblSelectedCoinFilter);
       var matchSt = true;
       if (tblSelectedStatusFilter === 'OPEN') matchSt = !p.isSold;
@@ -1945,25 +1947,27 @@
   }
 
   function renderTableFilters() {
-    var exBar = document.getElementById('tableExchangeFilters'); 
+    var exchangeSelect = document.getElementById('tableExchangeSelect');
     var coinSelect = document.getElementById('tableCoinSelect');
-    if (!exBar || !coinSelect) return;
-    exBar.innerHTML = '';
+    var statusSelect = document.getElementById('tableStatusSelect');
+    if (!exchangeSelect || !coinSelect) return;
+
     var exchanges = []; var coins = [];
     for (var i = 0; i < purchases.length; i++) {
       var ex = purchases[i].exchange.trim(); if (ex && exchanges.indexOf(ex) === -1) exchanges.push(ex);
       var c = purchases[i].symbol.trim().toUpperCase(); if (c && coins.indexOf(c) === -1) coins.push(c);
     }
-    var allExBtn = document.createElement('button');
-    allExBtn.className = 'filter-btn ' + (tblSelectedExchangeFilter === 'ALL' ? 'active' : '');
-    allExBtn.textContent = 'Alle Exchanges'; allExBtn.onclick = function() { setTableExchangeFilter('ALL'); }; exBar.appendChild(allExBtn);
-    exchanges.forEach(function(ex) {
-      var btn = document.createElement('button');
-      btn.className = 'filter-btn ' + (tblSelectedExchangeFilter === ex ? 'active' : '');
-      btn.textContent = ex; btn.onclick = function() { setTableExchangeFilter(ex); }; exBar.appendChild(btn);
+
+    exchangeSelect.innerHTML = '<option value="ALL">Exchange</option>';
+    exchanges.sort().forEach(function(ex) {
+      var opt = document.createElement('option');
+      opt.value = ex;
+      opt.textContent = ex;
+      if (tblSelectedExchangeFilter.toLowerCase() === ex.toLowerCase()) opt.selected = true;
+      exchangeSelect.appendChild(opt);
     });
-    
-    coinSelect.innerHTML = '<option value="ALL">Alle Munten</option>';
+
+    coinSelect.innerHTML = '<option value="ALL">Munten</option>';
     coins.sort().forEach(function(coin) {
       var opt = document.createElement('option');
       opt.value = coin; 
@@ -1971,9 +1975,13 @@
       if (tblSelectedCoinFilter === coin) opt.selected = true;
       coinSelect.appendChild(opt);
     });
+
+    if (statusSelect) {
+      statusSelect.value = tblSelectedStatusFilter;
+    }
   }
 
-  function setTableExchangeFilter(exchange) { tblSelectedExchangeFilter = exchange; renderTableFilters(); renderTable(); }
+  function handleTableExchangeChange(ex) { tblSelectedExchangeFilter = ex; renderTable(); }
   function handleTableCoinChange(coin) { tblSelectedCoinFilter = coin; renderTable(); }
   function handleTableStatusChange(status) { tblSelectedStatusFilter = status; renderTable(); }
 

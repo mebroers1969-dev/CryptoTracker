@@ -1120,7 +1120,7 @@
     });
   }
 
-  function fetchLivePrices() {
+function fetchLivePrices() {
     var openSymbols = [];
     for (var i = 0; i < purchases.length; i++) {
       if (!purchases[i].isSold) {
@@ -1130,27 +1130,45 @@
     }
     if (openSymbols.length === 0) { updateStatusDisplay(); updateSummary(); return; }
 
-    fetch('https://api.binance.com/api/v3/ticker/price?symbol=EURUSDT')
-      .then(function(r) { return r.ok ? r.json() : null; })
-      .then(function(eurData) {
-        var eurUsdtRate = eurData ? parseFloat(eurData.price) : 1.08;
-        var promises = openSymbols.map(function(sym) {
-          return fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'EUR')
-            .then(function(r) { if (r.ok) return r.json(); throw new Error('Geen EUR'); })
-            .then(function(d) { if (d && d.price) livePrices[sym] = parseFloat(d.price); })
-            .catch(function() {
-              return fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'USDT')
-                .then(function(r2) { return r2.ok ? r2.json() : null; })
-                .then(function(usdtData) { if (usdtData && usdtData.price) livePrices[sym] = parseFloat(usdtData.price) / eurUsdtRate; })
-                .catch(function() {});
-            });
+    // Haal gelijktijdig de EUR/USDT koers en alle munten tegelijk op voor maximale snelheid
+    var eurRequest = fetch('https://api.binance.com/api/v3/ticker/price?symbol=EURUSDT').then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; });
+    
+    var coinRequests = openSymbols.map(function(sym) {
+      return fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'EUR')
+        .then(function(r) { if (r.ok) return r.json(); throw new Error(); })
+        .then(function(d) { return { sym: sym, price: parseFloat(d.price) }; })
+        .catch(function() {
+          return fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym + 'USDT')
+            .then(function(r2) { return r2.ok ? r2.json() : null; })
+            .catch(function() { return null; });
         });
-        return Promise.all(promises);
-      })
-      .then(function() {
-        lastUpdatedTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        renderCards(); renderTable(); updateSummary(); checkProfitTargets(); secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS; updateStatusDisplay();
-      });
+    });
+
+    Promise.all([eurRequest].concat(coinRequests)).then(function(results) {
+      var eurData = results[0];
+      var eurUsdtRate = eurData ? parseFloat(eurData.price) : 1.08;
+
+      for (var i = 1; i < results.length; i++) {
+        var res = results[i];
+        if (!res) continue;
+        var sym = openSymbols[i - 1];
+        if (res.price !== undefined) {
+          livePrices[sym] = res.price;
+        } else if (res.priceStr || res.price) {
+          // Als het via USDT binnenkomt
+          var pUsdt = parseFloat(res.price);
+          if (!isNaN(pUsdt)) livePrices[sym] = pUsdt / eurUsdtRate;
+        }
+      }
+
+      lastUpdatedTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      renderCards(); 
+      renderTable(); 
+      updateSummary(); 
+      checkProfitTargets(); 
+      secondsUntilNextRefresh = REFRESH_INTERVAL_SECONDS; 
+      updateStatusDisplay();
+    });
   }
 
   function fetchBinanceFuturesPrices() {

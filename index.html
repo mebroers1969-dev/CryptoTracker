@@ -473,6 +473,13 @@
   <!-- Spot Portefeuille Scherm -->
   <div id="portfolioView">
     <div class="filter-section" id="filterSection">
+      <!-- Dropdown filter bovenaan op de beginpagina voor munten -->
+      <div id="homeCoinFilterContainer" class="filter-bar" style="margin-bottom: 6px;">
+        <select id="homeCoinSelect" class="filter-select" onchange="selectCoinFromHomeDropdown(this.value)">
+          <option value="ALL">Munten</option>
+        </select>
+      </div>
+
       <div id="subScreenNav" style="display: none; justify-content: space-between; align-items: center; background: #1e293b; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 10px; margin-bottom: 6px;">
         <button type="button" class="btn-secondary" onclick="returnToAggregatedHome()">← Terug naar Overzicht</button>
         <div id="subScreenTitle" style="font-weight: 700; color: #38bdf8; font-size: 0.95rem;">Munt</div>
@@ -798,7 +805,7 @@
   </div>
 
   <div style="background-color: var(--card-bg, #1e222d); border: 1px solid var(--border-color, #2a2e39); border-radius: 12px; padding: 12px; text-align: center; margin: 20px 0 10px 0;">
-    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.8.0 (Instant Parallel Fetch & Compact Table Filters)</span>
+    <span style="font-size: 11px; color: #888; letter-spacing: 0.5px;">Crypto Tracker &bull; Versie 2.8.6 (Home Dropdown Coin Filter Restored)</span>
   </div>
 </div>
 
@@ -885,7 +892,6 @@
       renderTableFilters();
       renderTable();
       
-      // Direct ophalen van koersen in één keer parallel
       fetchLivePrices();
       fetchBinanceFuturesPrices();
 
@@ -1527,8 +1533,6 @@
     updateFuturesSummary(futures.filter(function(f) { return !f.isClosed; }));
   }
 
-  function updateyszerSummary() {} // placeholder
-
   function updateSummary() {
     var tableViewContainer = document.getElementById('tableViewContainer');
     var visible = (tableViewContainer && tableViewContainer.style.display === 'flex') ? getTableFilteredPurchases() : getFilteredPurchases();
@@ -1582,7 +1586,48 @@
     }
   }
 
+  function renderHomeCoinFilterDropdown() {
+    var homeSelect = document.getElementById('homeCoinSelect');
+    if (!homeSelect) return;
+    homeSelect.innerHTML = '';
+
+    if (activeCoinFilter !== null) {
+      var container = document.getElementById('homeCoinFilterContainer');
+      if (container) container.style.display = 'none';
+      return;
+    } else {
+      var container = document.getElementById('homeCoinFilterContainer');
+      if (container) container.style.display = 'flex';
+    }
+
+    var openCoins = [];
+    purchases.forEach(function(p) {
+      if (!p.isSold) {
+        var sym = p.symbol.trim().toUpperCase();
+        if (openCoins.indexOf(sym) === -1) openCoins.push(sym);
+      }
+    });
+
+    homeSelect.innerHTML = '<option value="ALL">Munten</option>';
+    openCoins.sort().forEach(function(sym) {
+      var opt = document.createElement('option');
+      opt.value = sym;
+      opt.textContent = sym;
+      if (activeCoinFilter === sym) opt.selected = true;
+      homeSelect.appendChild(opt);
+    });
+  }
+
+  function selectCoinFromHomeDropdown(val) {
+    if (val === 'ALL') {
+      showAllTransactions();
+    } else {
+      selectCoinFromHome(val);
+    }
+  }
+
   function renderCards() {
+    renderHomeCoinFilterDropdown();
     var container = document.getElementById('cardsContainer'); if (!container) return; container.innerHTML = '';
     var subNav = document.getElementById('subScreenNav');
     var coinFilters = document.getElementById('coinDetailFilters');
